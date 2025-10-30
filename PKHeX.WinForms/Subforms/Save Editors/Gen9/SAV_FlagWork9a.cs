@@ -9,7 +9,8 @@ namespace PKHeX.WinForms;
 
 public sealed partial class SAV_FlagWork9a : Form
 {
-    private readonly Dictionary<ulong, string> Lookup = [];
+    private readonly Dictionary<ulong, string> Lookup = new() { {FnvHash.HashEmpty, ""} };
+    private readonly EventWorkLookup Names;
 
     private readonly IEventWorkGrid[] Grids;
 
@@ -17,22 +18,32 @@ public sealed partial class SAV_FlagWork9a : Form
     {
         InitializeComponent();
 
-        var path = Path.Combine(Main.Settings.Advanced.PathBlockKeyList, $"{nameof(SAV9ZA)}.txt");
+        var path = Path.Combine(Main.Settings.Advanced.PathBlockKeyList, $"{sav.GetType().Name}_flagwork.txt");
         if (File.Exists(path))
             SCBlockMetadata.AddExtraKeyNames64(Lookup, File.ReadLines(path));
+
+        Names = new EventWorkLookup(Lookup);
 
         // Create grids for each block
         Grids =
         [
-            EventWorkGrid64<bool>.CreateFlags(GetTab(nameof(sav.Blocks.Event)), sav.Blocks.Event, Lookup),
-            EventWorkGrid64<ulong>.CreateValues(GetTab(nameof(sav.Blocks.Quest)), sav.Blocks.Quest, Lookup),
-            EventWorkGrid64<ulong>.CreateValues(GetTab(nameof(sav.Blocks.Mable)), sav.Blocks.Mable, Lookup),
+            EventWorkGrid64<bool>.CreateFlags(GetTab(nameof(sav.Blocks.Flags)), sav.Blocks.Flags, Names),
+            EventWorkGrid64<bool>.CreateFlags(GetTab(nameof(sav.Blocks.Event)), sav.Blocks.Event, Names),
+            EventWorkGrid64<ulong>.CreateValues(GetTab(nameof(sav.Blocks.Work)), sav.Blocks.Work, Names),
+            EventWorkGrid64<ulong>.CreateValues(GetTab(nameof(sav.Blocks.Quest)), sav.Blocks.Quest, Names),
+            EventWorkGrid64<ulong>.CreateValues(GetTab(nameof(sav.Blocks.WorkMable)), sav.Blocks.WorkMable, Names),
+            EventWorkGrid64<ulong>.CreateValues(GetTab(nameof(sav.Blocks.CountMable)), sav.Blocks.CountMable, Names),
 
-            EventWorkGrid64<bool>.CreateFlags(GetTab(nameof(sav.Blocks.Flags)), sav.Blocks.Flags, Lookup),
-            EventWorkGrid64<ulong>.CreateValues(GetTab(nameof(sav.Blocks.Work)), sav.Blocks.Work, Lookup),
-            EventWorkGrid64<ulong>.CreateValues(GetTab(nameof(sav.Blocks.Work1)), sav.Blocks.Work1, Lookup),
-            EventWorkGrid64<ulong>.CreateValues(GetTab(nameof(sav.Blocks.Work2)), sav.Blocks.Work2, Lookup),
-            EventWorkGrid64<ulong>.CreateValues(GetTab(nameof(sav.Blocks.Work3)), sav.Blocks.Work3, Lookup),
+            EventWorkGrid64<ulong>.CreateValues(GetTab(nameof(sav.Blocks.CountTitle)), sav.Blocks.CountTitle, Names),
+            EventWorkGridTuple.CreateValues(GetTab(nameof(sav.Blocks.Report)), sav.Blocks.Report, Names),
+
+            EventWorkGrid64<ulong>.CreateValues(GetTab(nameof(sav.Blocks.WorkSpawn)), sav.Blocks.WorkSpawn, Names),
+            EventWorkGrid64<ulong>.CreateValues(GetTab(nameof(sav.Blocks.InfiniteRank)), sav.Blocks.InfiniteRank, Names),
+            EventWorkGridTuple.CreateValues(GetTab(nameof(sav.Blocks.Spawner2)), sav.Blocks.Spawner2, Names),
+            EventWorkGrid128.CreateValues(GetTab(nameof(sav.Blocks.Spawner4)), sav.Blocks.Spawner4, Names),
+
+            EventWorkGridTuple.CreateValues(GetTab(nameof(sav.Blocks.Obstruction)), sav.Blocks.Obstruction, Names),
+            EventWorkGrid192.CreateValues(GetTab(nameof(sav.Blocks.FieldObjectInteractable)), sav.Blocks.FieldObjectInteractable, Names),
         ];
 
         // Translate headings
@@ -101,15 +112,15 @@ public sealed partial class SAV_FlagWork9a : Form
         }
         List<string> result = [];
 
-        AppendDiff<EventWorkFlagStorage, bool>(result, updated.Blocks.Event, previous.Blocks.Event);
         AppendDiff<EventWorkFlagStorage, bool>(result, updated.Blocks.Flags, previous.Blocks.Flags);
+        AppendDiff<EventWorkFlagStorage, bool>(result, updated.Blocks.Event, previous.Blocks.Event);
 
+        AppendDiff<EventWorkValueStorage, ulong>(result, updated.Blocks.Work, previous.Blocks.Work);
         AppendDiff<EventWorkValueStorage, ulong>(result, updated.Blocks.Quest, previous.Blocks.Quest);
-        AppendDiff<EventWorkValueStorage, ulong>(result, updated.Blocks.Mable, previous.Blocks.Mable);
-        AppendDiff<EventWorkValueStorage, ulong>(result, updated.Blocks.Work,  previous.Blocks.Work);
-        AppendDiff<EventWorkValueStorage, ulong>(result, updated.Blocks.Work1, previous.Blocks.Work1);
-        AppendDiff<EventWorkValueStorage, ulong>(result, updated.Blocks.Work2, previous.Blocks.Work2);
-        AppendDiff<EventWorkValueStorage, ulong>(result, updated.Blocks.Work3, previous.Blocks.Work3);
+        AppendDiff<EventWorkValueStorage, ulong>(result, updated.Blocks.WorkMable, previous.Blocks.WorkMable);
+        AppendDiff<EventWorkValueStorage, ulong>(result, updated.Blocks.CountMable, previous.Blocks.CountMable);
+        AppendDiff<EventWorkValueStorage, ulong>(result, updated.Blocks.CountTitle, previous.Blocks.CountTitle);
+        AppendDiff<EventWorkValueStorage, ulong>(result, updated.Blocks.WorkSpawn, previous.Blocks.WorkSpawn);
 
         if (result.Count == 0)
             result.Add("No differences found.");
@@ -142,7 +153,7 @@ public sealed partial class SAV_FlagWork9a : Form
                 break;
             var u = update.GetValue(i);
 
-            var name = EventWorkGrid64<T2>.GetNameDisplay(hash, Lookup);
+            var name = Names.GetName(hash);
             if (!previous.TryGetValue(hash, out var p))
                 result.Add($"{name} added with value {u}");
             else if (!p.Equals(u))
@@ -161,7 +172,7 @@ public sealed partial class SAV_FlagWork9a : Form
             if (hashes.Contains(hash))
                 continue;
             var p = previous.GetValue(i);
-            var name = EventWorkGrid64<T2>.GetNameDisplay(hash, Lookup);
+            var name = Names.GetName(hash);
             result.Add($"{name} @ {i:X} removed, was {p}");
         }
         return result;
