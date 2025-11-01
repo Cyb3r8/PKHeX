@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Windows.Forms;
+using PKHeX.Drawing.PokeSprite;
 
 namespace PKHeX.WinForms.Controls;
 
@@ -25,15 +26,7 @@ public class VerticalTabControl : TabControl
         var bounds = GetTabRect(index);
 
         var graphics = e.Graphics;
-        if (e.State == DrawItemState.Selected)
-        {
-            using var brush = new LinearGradientBrush(bounds, Color.White, Color.LightGray, 90f);
-            graphics.FillRectangle(brush, bounds);
-        }
-        else
-        {
-            e.DrawBackground();
-        }
+        DrawBackground(e, bounds, graphics);
 
         using var flags = new StringFormat();
         flags.Alignment = StringAlignment.Center;
@@ -42,6 +35,19 @@ public class VerticalTabControl : TabControl
         var tab = TabPages[index];
         graphics.DrawString(tab.Text, Font, text, bounds, flags);
         base.OnDrawItem(e);
+    }
+
+    protected static void DrawBackground(DrawItemEventArgs e, Rectangle bounds, Graphics graphics)
+    {
+        if (e.State != DrawItemState.Selected)
+        {
+            e.DrawBackground();
+            return;
+        }
+
+        var (c1, c2) = (SystemColors.ControlLightLight, SystemColors.ScrollBar);
+        using var brush = new LinearGradientBrush(bounds, c1, c2, 90f);
+        graphics.FillRectangle(brush, bounds);
     }
 
     protected override void ScaleControl(SizeF factor, BoundsSpecified specified)
@@ -61,12 +67,12 @@ public sealed class VerticalTabControlEntityEditor : VerticalTabControl
     /// </summary>
     private static readonly Color[] SelectedTags =
     [
-        Color.FromArgb(248, 152, 096),
-        Color.FromArgb(128, 152, 248),
-        Color.FromArgb(248, 168, 208),
-        Color.FromArgb(112, 224, 112),
-        Color.FromArgb(248, 240, 056),
-        Color.RosyBrown,
+        ContestColor.Cool, // Main
+        ContestColor.Beauty, // Met
+        ContestColor.Cute, // Stats
+        ContestColor.Clever, // Moves
+        ContestColor.Tough, // Cosmetic
+        Color.RosyBrown, // OT
     ];
 
     protected override void OnDrawItem(DrawItemEventArgs e)
@@ -77,6 +83,7 @@ public sealed class VerticalTabControlEntityEditor : VerticalTabControl
         var bounds = GetTabRect(index);
 
         var graphics = e.Graphics;
+        DrawBackground(e, bounds, graphics);
         if (e.State == DrawItemState.Selected)
         {
             Color c1 = Color.White;
@@ -104,15 +111,13 @@ public sealed class VerticalTabControlEntityEditor : VerticalTabControl
             using var brush = new LinearGradientBrush(bounds, c1, c2, 90f);
             graphics.FillRectangle(brush, bounds);
 
+            // draw colored pip on the left side of the tab
             using var pipBrush = new SolidBrush(SelectedTags[index]);
             var pip = GetTabRect(index) with { Width = bounds.Width / 8 };
             graphics.FillRectangle(pipBrush, pip);
+
+            // shift text to the right to avoid pip overlap
             bounds = bounds with { Width = bounds.Width - pip.Width, X = bounds.X + pip.Width };
-        }
-        else
-        {
-            // no need to shift text
-            e.DrawBackground();
         }
 
         using var flags = new StringFormat();
