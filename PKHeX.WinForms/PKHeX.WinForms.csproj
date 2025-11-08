@@ -59,6 +59,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Remove="MainWindow\Plugins\AutoModPlugins.dll" />
     <None Remove="MainWindow\Plugins\PLZASeedFinderPlugin.dll" />
     <None Remove="MainWindow\Plugins\SpindaPatternPlugin.dll" />
     <None Remove="MainWindow\Plugins\SVSeedFinderPlugin.dll" />
@@ -67,6 +68,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="MainWindow\Plugins\AutoModPlugins.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </EmbeddedResource>
     <EmbeddedResource Include="MainWindow\Plugins\PLZASeedFinderPlugin.dll">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </EmbeddedResource>
