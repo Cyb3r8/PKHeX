@@ -253,7 +253,7 @@ public sealed record EncounterGift9a(ushort Species, byte Form, byte Level, byte
         return true;
     }
 
-    private static uint GetFixedTrainerID32(TrainerGift9a trainer) => trainer switch
+    public static uint GetFixedTrainerID32(TrainerGift9a trainer) => trainer switch
     {
         TrainerGift9a.Lucario => 912562,
         TrainerGift9a.Floette => 1,
@@ -263,7 +263,7 @@ public sealed record EncounterGift9a(ushort Species, byte Form, byte Level, byte
         _ => throw new ArgumentOutOfRangeException(nameof(trainer), trainer, null),
     };
 
-    private static byte GetFixedTrainerGender(TrainerGift9a trainer) => trainer switch
+    public static byte GetFixedTrainerGender(TrainerGift9a trainer) => trainer switch
     {
         TrainerGift9a.Lucario => 1,
         TrainerGift9a.Floette => 0,
@@ -273,7 +273,7 @@ public sealed record EncounterGift9a(ushort Species, byte Form, byte Level, byte
         _ => throw new ArgumentOutOfRangeException(nameof(trainer), trainer, null),
     };
 
-    private static string GetFixedTrainerName(TrainerGift9a trainer, int language) => trainer switch
+    public static string GetFixedTrainerName(TrainerGift9a trainer, int language) => trainer switch
     {
         TrainerGift9a.Lucario => language switch
         {
