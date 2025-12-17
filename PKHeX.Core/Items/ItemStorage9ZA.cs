@@ -119,9 +119,14 @@ public sealed class ItemStorage9ZA : IItemStorage
     [
         0016, // Cherish Ball
 
+        0534, // Red Orb
+        0535, // Blue Orb
+
         0664, // Blazikenite
         0752, // Swampertite
         0753, // Sceptilite
+
+        2137, // Gimmighoul Coin
 
         2640, // Garchompite Z
         2648, // Baxcalibrite
