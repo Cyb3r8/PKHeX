@@ -394,7 +394,7 @@ public sealed class LearnGroupHOME : ILearnGroup
         }
     }
 
-    private static bool AddOriginalMoves(Span<MoveResult> result, ReadOnlySpan<ushort> current, Span<ushort> moves, LearnEnvironment game)
+    private static bool AddOriginalMoves(Span<MoveResult> result, ReadOnlySpan<ushort> current, ReadOnlySpan<ushort> moves, LearnEnvironment game)
     {
         bool addedAny = false;
         foreach (var move in moves)
