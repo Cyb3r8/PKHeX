@@ -348,7 +348,7 @@ public sealed class ShowdownSet : IBattleTemplate
             LogError(NatureUnrecognized, value);
             return false;
         }
-        if (Nature != Nature.Random && Nature != nature)
+        if (Nature.IsFixed() && Nature != nature)
         {
             LogError(NatureAlreadySpecified, value);
             return false;
@@ -1083,7 +1083,7 @@ public sealed class ShowdownSet : IBattleTemplate
                 return false; // invalid line
             }
 
-            if (Nature != Nature.Random) // specified in a separate Nature line
+            if (Nature.IsFixed()) // specified in a separate Nature line
                 LogError(NatureEffortAmpAlreadySpecified, natureName);
             else
                 Nature = (Nature)natureIndex;
@@ -1102,7 +1102,7 @@ public sealed class ShowdownSet : IBattleTemplate
         result.TreatAmpsAsSpeedNotLast();
         var ampNature = AdjustNature(result.Plus, result.Minus);
         success &= ampNature;
-        if (ampNature && currentNature != Nature.Random && currentNature != Nature)
+        if (ampNature && currentNature.IsFixed() && currentNature != Nature)
         {
             LogError(NatureEffortAmpConflictNature);
             Nature = currentNature; // revert to original
