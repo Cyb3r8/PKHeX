@@ -78,8 +78,7 @@ public sealed class MarkVerifier : Verifier
             return;
 
         var affix = (RibbonIndex)affixValue;
-        var evos = data.Info.EvoChainsAllGens;
-        var max = MarkRules.GetMaxAffixValue(evos);
+        var max = MarkRules.GetMaxAffixValue(data.Info.EvoChainsAllGens);
         if ((sbyte)max == -1 || affix > max)
         {
             data.AddLine(GetInvalid(RibbonMarkingAffixed_0, (ushort)affix));
@@ -89,18 +88,10 @@ public sealed class MarkVerifier : Verifier
         if (m is not PKM pk)
             return;
 
-        var enc = data.EncounterOriginal;
-        if (MarkRules.IsEncounterMarkLost(enc, data.Entity))
+        if (MarkRules.IsEncounterMarkLost(data.EncounterOriginal, data.Entity))
         {
             VerifyShedinjaAffixed(data, affix, pk, m);
             return;
-        }
-
-        // Some games cannot affix ribbon unless it transfers to a game that can affix it.
-        if (enc.Context is EntityContext.Gen8a or EntityContext.Gen9a && pk.Context == enc.Context)
-        {
-            if (!evos.HasVisitedExcept(enc.Context))
-                data.AddLine(GetInvalid(RibbonMarkingAffixed_0, (ushort)affix));
         }
         EnsureHasRibbon(data, m, affix);
     }

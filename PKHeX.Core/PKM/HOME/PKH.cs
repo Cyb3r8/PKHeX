@@ -212,14 +212,14 @@ public sealed class PKH : PKM, IHandlerLanguage, IFormArgument, IHomeTrack, IBat
     public override ushort Move2       { get => LatestGameData.Move2      ; set => LatestGameData.Move2       = value; }
     public override ushort Move3       { get => LatestGameData.Move3      ; set => LatestGameData.Move3       = value; }
     public override ushort Move4       { get => LatestGameData.Move4      ; set => LatestGameData.Move4       = value; }
-    public override int Move1_PP    { get => (LatestGameData as IGameDataSidePP)?.Move1_PP    ?? 0; set => (LatestGameData as IGameDataSidePP)?.Move1_PP    = (byte)value; }
-    public override int Move2_PP    { get => (LatestGameData as IGameDataSidePP)?.Move2_PP    ?? 0; set => (LatestGameData as IGameDataSidePP)?.Move2_PP    = (byte)value; }
-    public override int Move3_PP    { get => (LatestGameData as IGameDataSidePP)?.Move3_PP    ?? 0; set => (LatestGameData as IGameDataSidePP)?.Move3_PP    = (byte)value; }
-    public override int Move4_PP    { get => (LatestGameData as IGameDataSidePP)?.Move4_PP    ?? 0; set => (LatestGameData as IGameDataSidePP)?.Move4_PP    = (byte)value; }
-    public override int Move1_PPUps { get => (LatestGameData as IGameDataSidePP)?.Move1_PPUps ?? 0; set => (LatestGameData as IGameDataSidePP)?.Move1_PPUps = (byte)value; }
-    public override int Move2_PPUps { get => (LatestGameData as IGameDataSidePP)?.Move2_PPUps ?? 0; set => (LatestGameData as IGameDataSidePP)?.Move2_PPUps = (byte)value; }
-    public override int Move3_PPUps { get => (LatestGameData as IGameDataSidePP)?.Move3_PPUps ?? 0; set => (LatestGameData as IGameDataSidePP)?.Move3_PPUps = (byte)value; }
-    public override int Move4_PPUps { get => (LatestGameData as IGameDataSidePP)?.Move4_PPUps ?? 0; set => (LatestGameData as IGameDataSidePP)?.Move4_PPUps = (byte)value; }
+    public override int Move1_PP    { get => (LatestGameData as IGameDataSidePP)?.Move1_PP    ?? 0; set { if (LatestGameData is IGameDataSidePP pp) pp.Move1_PP    = (byte)value; } }
+    public override int Move2_PP    { get => (LatestGameData as IGameDataSidePP)?.Move2_PP    ?? 0; set { if (LatestGameData is IGameDataSidePP pp) pp.Move2_PP    = (byte)value; } }
+    public override int Move3_PP    { get => (LatestGameData as IGameDataSidePP)?.Move3_PP    ?? 0; set { if (LatestGameData is IGameDataSidePP pp) pp.Move3_PP    = (byte)value; } }
+    public override int Move4_PP    { get => (LatestGameData as IGameDataSidePP)?.Move4_PP    ?? 0; set { if (LatestGameData is IGameDataSidePP pp) pp.Move4_PP    = (byte)value; } }
+    public override int Move1_PPUps { get => (LatestGameData as IGameDataSidePP)?.Move1_PPUps ?? 0; set { if (LatestGameData is IGameDataSidePP pp) pp.Move1_PPUps = (byte)value; } }
+    public override int Move2_PPUps { get => (LatestGameData as IGameDataSidePP)?.Move2_PPUps ?? 0; set { if (LatestGameData is IGameDataSidePP pp) pp.Move2_PPUps = (byte)value; } }
+    public override int Move3_PPUps { get => (LatestGameData as IGameDataSidePP)?.Move3_PPUps ?? 0; set { if (LatestGameData is IGameDataSidePP pp) pp.Move3_PPUps = (byte)value; } }
+    public override int Move4_PPUps { get => (LatestGameData as IGameDataSidePP)?.Move4_PPUps ?? 0; set { if (LatestGameData is IGameDataSidePP pp) pp.Move4_PPUps = (byte)value; } }
 
     public override byte Ball         { get => LatestGameData.Ball;         set => LatestGameData.Ball = value; }
     public override ushort MetLocation { get => LatestGameData.MetLocation; set => LatestGameData.MetLocation = value; }
