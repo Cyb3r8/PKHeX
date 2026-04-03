@@ -292,7 +292,9 @@ public sealed class LegalityCheckLocalization
     public string MoveFExpectSingle_0 { get; set; } = "Expected: {0}";
     public string MoveKeldeoMismatch { get; set; } = "Keldeo Move/Form mismatch.";
     public string MovePPExpectHealed_0 { get; set; } = "Move {0} PP is below the amount expected.";
+    public string MovePPExpectHealed_01 { get; set; } = "Move {0} PP is expected to be {1}.";
     public string MovePPTooHigh_0 { get; set; } = "Move {0} PP is above the amount allowed.";
+    public string MovePPTooHigh_01 { get; set; } = "Move {0} PP ({1}) is above the amount allowed.";
     public string MovePPUpsTooHigh_0 { get; set; } = "Move {0} PP Ups is above the amount allowed.";
 
     public string MoveShopAlphaMoveShouldBeMastered_0 { get; set; } = "Alpha Move should be marked as mastered.";

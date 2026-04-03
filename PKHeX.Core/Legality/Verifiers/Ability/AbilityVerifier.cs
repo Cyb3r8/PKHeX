@@ -492,6 +492,21 @@ public sealed class AbilityVerifier : Verifier
             }
         }
 
+        // If deposited in HOME, it will realign to the deposited species-form ability.
+        // If you transfer back into ZA then evolve it, you can disjoint it again.
+        // If it hasn't evolved, then it must have been realigned by HOME.
+        if (pa9 is IHomeTrack { HasTracker: true })
+        {
+            var form = pa9.Form;
+            var actual = PersonalTable.ZA[species, form];
+            var require = actual.GetAbilityAtIndex(index);
+            if (ability == require)
+                return VALID;
+            if (enc.Species == species) // Not evolved after; must match.
+                return GetInvalid(AbilityMismatch);
+        }
+
+        // Otherwise, we expect the form's personal info to match the original encounter's ability.
         var expect = pi.GetAbilityAtIndex(index);
         if (ability != expect)
             return GetInvalid(AbilityMismatch);
