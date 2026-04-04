@@ -138,7 +138,7 @@ public static class EntityFormat
         FormatPB8 => new PB8(data),
         Format6or7 => prefer == EntityContext.Gen6 ? new PK6(data) : new PK7(data),
         Format8or8b => prefer == EntityContext.Gen8b ? new PB8(data) : new PK8(data),
-        FormatPK9 => new PK9(data),
+        FormatPK9 => prefer == EntityContext.Gen9a ? new PA9(data) : new PK9(data),
         FormatPA9 => new PA9(data),
         _ => null,
     };
