@@ -112,7 +112,7 @@ public readonly record struct EncounterCriteria : IFixedNature, IFixedAbilityNum
     /// Determines whether a specific Nature is specified in the criteria or if complex nature mutations are allowed.
     /// </summary>
     /// <returns>><see langword="true"/> if a Nature is specified or complex nature mutations are allowed; otherwise, <see langword="false"/>.</returns>
-    public bool IsSpecifiedNature() => Nature != Nature.Random || Mutations.IsComplexNature();
+    public bool IsSpecifiedNature() => Nature.IsFixed() || Mutations.IsComplexNature();
 
     /// <summary>
     /// Determines whether a level range is specified in the criteria.
@@ -125,6 +125,12 @@ public readonly record struct EncounterCriteria : IFixedNature, IFixedAbilityNum
     /// </summary>
     /// <returns>><see langword="true"/> if an Ability is specified; otherwise, <see langword="false"/>.</returns>
     public bool IsSpecifiedAbility() => Ability != Any12H;
+
+    /// <summary>
+    /// Determines whether the shiny value is explicitly specified rather than set to random.
+    /// </summary>
+    /// <returns>><see langword="true"/> if a Shiny is specified; otherwise, <see langword="false"/>.</returns>
+    public bool IsSpecifiedShiny() => Shiny != Shiny.Random;
 
     /// <summary>
     /// Determines whether all IVs are specified in the criteria.
@@ -181,6 +187,20 @@ public readonly record struct EncounterCriteria : IFixedNature, IFixedAbilityNum
         OnlySecond => index == 1 || Mutations.HasFlag(CanAbilityCapsule),
         OnlyHidden => index == 2 || Mutations.HasFlag(CanAbilityPatch),
         _ => throw new ArgumentOutOfRangeException(nameof(ability), ability, null),
+    };
+
+    /// <summary>
+    /// Determines whether the specified shiny properties satisfy the shiny criteria based on the current <see cref="Shiny"/> setting.
+    /// </summary>
+    /// <returns>><see langword="true"/> if the index satisfies the shiny criteria; otherwise, <see langword="false"/>.</returns>
+    public bool IsSatisfiedShiny(uint xor, uint cmp) => Shiny switch
+    {
+        Shiny.Random => true,
+        Shiny.Never => xor > cmp, // not shiny
+        Shiny.AlwaysSquare => xor == 0, // square shiny
+        Shiny.AlwaysStar => xor < cmp && xor != 0, // star shiny
+        Shiny.Always => xor < cmp, // shiny
+        _ => false, // shouldn't be set
     };
 
     /// <summary>
@@ -305,7 +325,7 @@ public readonly record struct EncounterCriteria : IFixedNature, IFixedAbilityNum
     /// </summary>
     public Nature GetNature()
     {
-        if (Nature != Nature.Random)
+        if (Nature.IsFixed())
             return Nature;
         var result = (Nature)Util.Rand.Next(25);
         if (Mutations.HasFlag(AllowOnlyNeutralNature))

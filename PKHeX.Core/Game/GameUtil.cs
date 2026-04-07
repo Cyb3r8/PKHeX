@@ -81,6 +81,7 @@ public static class GameUtil
         // Gen9
         SL or VL => SV,
         ZA => ZA,
+        CP => CP,
 
         _ => Invalid,
     };
@@ -142,7 +143,7 @@ public static class GameUtil
         BD or SP => 8,
         SW or SH => 8,
         SL or VL => 9,
-        ZA => 9,
+        ZA or CP => 9,
         _ => 0
     };
 
@@ -167,6 +168,7 @@ public static class GameUtil
         SW or SH => Legal.MaxSpeciesID_8,
         SL or VL => Legal.MaxSpeciesID_9,
         ZA       => Legal.MaxSpeciesID_9a,
+        CP       => Legal.MaxSpeciesID_9, // TODO: Champions
         _ => 0
     };
 
@@ -193,7 +195,7 @@ public static class GameUtil
     public static bool IsGen7(this GameVersion version) => version is SN or MN or US or UM;
     public static bool IsGen7b(this GameVersion version) => version is GP or GE;
     public static bool IsGen8(this GameVersion version) => version is SW or SH or PLA or BD or SP;
-    public static bool IsGen9(this GameVersion version) => version is SL or VL or ZA;
+    public static bool IsGen9(this GameVersion version) => version is SL or VL or ZA or CP;
 
     /// <summary>
     /// Checks if the <see cref="lump"/> version is the lump of the requested saved <see cref="version"/>.
@@ -245,7 +247,7 @@ public static class GameUtil
         Gen8   => version is SW or SH or BD or SP or SWSH or BDSP or PLA,
 
         SV     => version is SL or VL,
-        Gen9   => version is SL or VL or SV or ZA,
+        Gen9   => version is SL or VL or SV or ZA or CP,
 
         _      => false,
     };

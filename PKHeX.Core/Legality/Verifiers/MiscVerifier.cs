@@ -224,10 +224,19 @@ public sealed class MiscVerifier : Verifier
         }
         else if (data.EncounterMatch.Context is EntityContext.Gen9a)
         {
-            if (s2.HeightScalar != 0)
-                data.AddLine(GetInvalid(Encounter, StatIncorrectHeightValue_0, 0));
-            if (s2.WeightScalar != 0)
-                data.AddLine(GetInvalid(Encounter, StatIncorrectWeightValue_0, 0));
+            // Z-A stores size only via Scale; HeightScalar/WeightScalar are normally 0.
+            // HOME 4.0.0+ rewrites Alphas to 255/255/255 the moment HOME opens the save,
+            // so a HOME-touched Alpha legitimately has HeightScalar = WeightScalar = 255.
+            bool homeTouchedAlpha = data.EncounterMatch is IAlphaReadOnly { IsAlpha: true }
+                                    && pk is IHomeTrack { HasTracker: true }
+                                    && s2 is { HeightScalar: 255, WeightScalar: 255 };
+            if (!homeTouchedAlpha)
+            {
+                if (s2.HeightScalar != 0)
+                    data.AddLine(GetInvalid(Encounter, StatIncorrectHeightValue_0, 0));
+                if (s2.WeightScalar != 0)
+                    data.AddLine(GetInvalid(Encounter, StatIncorrectWeightValue_0, 0));
+            }
         }
         else if (CheckHeightWeightOdds(data.EncounterMatch))
         {
