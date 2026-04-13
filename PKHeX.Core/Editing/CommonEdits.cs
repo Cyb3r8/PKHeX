@@ -202,7 +202,12 @@ public static class CommonEdits
         }
         else
         {
-            pk.SetEVs(evs);
+            // Champions revises EV behavior to be /8.
+            // If the user is requesting a Champions-like set import, apply EVs that way.
+            if (set.IsChampions)
+                pk.SetEVsChampions(evs);
+            else
+                pk.SetEVs(evs);
         }
 
         // IVs have no side effects such as hidden power type in gen 8
@@ -271,6 +276,13 @@ public static class CommonEdits
             pk.SetRelearnMoves(legal);
         pk.ResetPartyStats();
         pk.RefreshChecksum();
+    }
+
+    private static void SetEVsChampions(this PKM pk, ReadOnlySpan<int> evs)
+    {
+        Span<int> final = stackalloc int[6];
+        EffortValues.ConvertFromChampions(evs, final);
+        pk.SetEVs(final);
     }
 
     /// <summary>
