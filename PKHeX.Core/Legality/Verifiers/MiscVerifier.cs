@@ -222,16 +222,21 @@ public sealed class MiscVerifier : Verifier
             if (s2 is { HeightScalar: 0, WeightScalar: 0 } && !data.Info.EvoChainsAllGens.HasVisitedPLA && enc is not IPogoSlot)
                 data.AddLine(Get(Encounter, Severity.Invalid, StatInvalidHeightWeight));
         }
-        else if (enc.Context is EntityContext.Gen9a)
+        else if (data.EncounterMatch.Context is EntityContext.Gen9a)
         {
-            // By default, Gen9a does not apply height/weight properties, so 0-0 is expected.
-            // If touched by HOME, Scale is copied to both Height and Weight properties.
-            // Thus, only n-n is valid. Scale we'll check separately if the current object's format supports it.
-            var height = s2.HeightScalar;
-            var weight = s2.WeightScalar;
-
-            if (height != weight)
-                data.AddLine(GetInvalid(Encounter, StatIncorrectWeightValue_0, height));
+            // Z-A stores size only via Scale; HeightScalar/WeightScalar are normally 0.
+            // HOME 4.0.0+ rewrites Alphas to 255/255/255 the moment HOME opens the save,
+            // so a HOME-touched Alpha legitimately has HeightScalar = WeightScalar = 255.
+            bool homeTouchedAlpha = data.EncounterMatch is IAlphaReadOnly { IsAlpha: true }
+                                    && pk is IHomeTrack { HasTracker: true }
+                                    && s2 is { HeightScalar: 255, WeightScalar: 255 };
+            if (!homeTouchedAlpha)
+            {
+                if (s2.HeightScalar != 0)
+                    data.AddLine(GetInvalid(Encounter, StatIncorrectHeightValue_0, 0));
+                if (s2.WeightScalar != 0)
+                    data.AddLine(GetInvalid(Encounter, StatIncorrectWeightValue_0, 0));
+            }
         }
         else if (CheckHeightWeightOdds(data.EncounterMatch))
         {
@@ -248,7 +253,7 @@ public sealed class MiscVerifier : Verifier
             // PLA static Alphas have potential for 127 scale; this is already checked explicitly in the matching check.
             // Ensure all Alphas have 255 scale.
             // Otherwise, ensure scale matches height scalar if required.
-            if (enc is { Context: EntityContext.Gen8a } and IAlphaReadOnly { IsAlpha: true })
+            if (enc is IAlphaReadOnly { IsAlpha: true })
             {
                 byte expect = enc switch
                 {
@@ -257,25 +262,6 @@ public sealed class MiscVerifier : Verifier
                 };
                 if (s3.Scale != expect)
                     data.AddLine(GetInvalid(StatIncorrectScaleValue_0, expect));
-            }
-            else if (enc is { Context: EntityContext.Gen9a })
-            {
-                // Height != Weight already checked.
-                var scale = s3.Scale;
-                var height = s2.HeightScalar;
-                if (scale == 0)
-                {
-                    // If scale is 0, then the only legal value for height/weight is also 0.
-                    if (height != 0)
-                        data.AddLine(GetInvalid(StatIncorrectHeightValue_0, 0));
-                }
-                else
-                {
-                    // If scale is nonzero, then height/weight must be 0 or equal to scale.
-                    // If it was definitely touched by HOME, then they can only be equal to scale, since HOME copies scale to height/weight.
-                    if ((height != 0 || IsHeightScaleMatchRequired(pk)) && height != scale)
-                        data.AddLine(GetInvalid(StatIncorrectHeightValue_0, height));
-                }
             }
             else if (IsHeightScaleMatchRequired(pk) && s2.HeightScalar != s3.Scale)
             {
