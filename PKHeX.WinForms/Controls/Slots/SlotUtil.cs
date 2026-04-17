@@ -3,6 +3,7 @@ using System.Drawing;
 using System.Windows.Forms;
 using PKHeX.Core;
 using PKHeX.Drawing.PokeSprite;
+using PKHeX.WinForms.Theming;
 
 namespace PKHeX.WinForms.Controls;
 
@@ -34,8 +35,8 @@ public static class SlotUtil
         _ => DropModifier.None,
     };
 
-    public static readonly Color GoodDataColor = Color.Transparent;
-    public static readonly Color BadDataColor = Color.Red;
+    public static Color GoodDataColor => Color.Transparent;
+    public static Color BadDataColor => Color.FromArgb(170, Theme.Current.Invalid);
 
     /// <summary>
     /// Refreshes a <see cref="PictureBox"/> with the appropriate display content.

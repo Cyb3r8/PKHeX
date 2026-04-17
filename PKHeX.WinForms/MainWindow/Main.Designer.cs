@@ -63,21 +63,25 @@ namespace PKHeX.WinForms
             toolTip = new System.Windows.Forms.ToolTip(components);
             splitContainer1 = new System.Windows.Forms.SplitContainer();
             dragout = new Controls.SelectablePictureBox();
-            PB_Legal = new System.Windows.Forms.PictureBox();
+            PN_HeroCard = new Controls.HeroDragoutCard();
+            PB_Legal = new Controls.AccentStatusChip();
             PKME_Tabs = new Controls.PKMEditor();
             C_SAV = new Controls.SAVEditor();
-            splitContainer2 = new System.Windows.Forms.SplitContainer();
+            topHeader = new Controls.TopHeader();
+            trainerPlate = new Controls.TrainerPlate();
+            statusStrip = new System.Windows.Forms.StatusStrip();
+            SL_SavePath = new System.Windows.Forms.ToolStripStatusLabel();
+            SL_Spring = new System.Windows.Forms.ToolStripStatusLabel();
+            SL_Version = new System.Windows.Forms.ToolStripStatusLabel();
+            SL_Language = new System.Windows.Forms.ToolStripStatusLabel();
             menuStrip1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
             splitContainer1.Panel1.SuspendLayout();
             splitContainer1.Panel2.SuspendLayout();
             splitContainer1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)dragout).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)PB_Legal).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)splitContainer2).BeginInit();
-            splitContainer2.Panel1.SuspendLayout();
-            splitContainer2.Panel2.SuspendLayout();
-            splitContainer2.SuspendLayout();
+            topHeader.SuspendLayout();
+            statusStrip.SuspendLayout();
             SuspendLayout();
             // 
             // menuStrip1
@@ -85,11 +89,14 @@ namespace PKHeX.WinForms
             menuStrip1.AccessibleDescription = "Main Window Menustrip";
             menuStrip1.AccessibleName = "Main Window Menustrip";
             menuStrip1.BackColor = System.Drawing.Color.Transparent;
+            menuStrip1.Dock = System.Windows.Forms.DockStyle.None;
             menuStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] { Menu_File, Menu_Tools, Menu_Options });
-            menuStrip1.Location = new System.Drawing.Point(0, 0);
+            menuStrip1.Location = new System.Drawing.Point(104, 12);
             menuStrip1.Name = "menuStrip1";
-            menuStrip1.Padding = new System.Windows.Forms.Padding(7, 2, 0, 2);
-            menuStrip1.Size = new System.Drawing.Size(856, 24);
+            menuStrip1.AutoSize = false;
+            menuStrip1.GripStyle = System.Windows.Forms.ToolStripGripStyle.Hidden;
+            menuStrip1.Padding = new System.Windows.Forms.Padding(0, 0, 0, 0);
+            menuStrip1.Size = new System.Drawing.Size(320, 22);
             menuStrip1.TabIndex = 1;
             menuStrip1.Text = "menuStrip1";
             // 
@@ -352,10 +359,10 @@ namespace PKHeX.WinForms
             L_UpdateAvailable.AccessibleDescription = "If an update is available, link label can be clicked to open new download link.";
             L_UpdateAvailable.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right;
             L_UpdateAvailable.Enabled = false;
-            L_UpdateAvailable.Location = new System.Drawing.Point(564, 0);
+            L_UpdateAvailable.Location = new System.Drawing.Point(430, 14);
             L_UpdateAvailable.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             L_UpdateAvailable.Name = "L_UpdateAvailable";
-            L_UpdateAvailable.Size = new System.Drawing.Size(288, 24);
+            L_UpdateAvailable.Size = new System.Drawing.Size(330, 18);
             L_UpdateAvailable.TabIndex = 102;
             L_UpdateAvailable.TabStop = true;
             L_UpdateAvailable.Text = "You are using the latest version!";
@@ -365,7 +372,7 @@ namespace PKHeX.WinForms
             // splitContainer1
             // 
             splitContainer1.Dock = System.Windows.Forms.DockStyle.Fill;
-            splitContainer1.Location = new System.Drawing.Point(0, 0);
+            splitContainer1.Location = new System.Drawing.Point(0, 44);
             splitContainer1.Margin = new System.Windows.Forms.Padding(8);
             splitContainer1.Name = "splitContainer1";
             // 
@@ -374,7 +381,7 @@ namespace PKHeX.WinForms
             splitContainer1.Panel1.AccessibleDescription = "Main Window Split Pane";
             splitContainer1.Panel1.AccessibleName = "Main Window Split Pane";
             splitContainer1.Panel1.Controls.Add(dragout);
-            splitContainer1.Panel1.Controls.Add(PB_Legal);
+            splitContainer1.Panel1.Controls.Add(PN_HeroCard);
             splitContainer1.Panel1.Controls.Add(PKME_Tabs);
             splitContainer1.Panel1MinSize = 400;
             // 
@@ -404,16 +411,26 @@ namespace PKHeX.WinForms
             dragout.MouseLeave += DragoutLeave;
             // 
             // PB_Legal
-            // 
-            PB_Legal.Image = Properties.Resources.valid;
-            PB_Legal.Location = new System.Drawing.Point(0, 0);
+            //
+            PB_Legal.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right;
+            PB_Legal.BackColor = System.Drawing.Color.Transparent;
+            PB_Legal.Location = new System.Drawing.Point(770, 9);
             PB_Legal.Margin = new System.Windows.Forms.Padding(0);
             PB_Legal.Name = "PB_Legal";
-            PB_Legal.Size = new System.Drawing.Size(24, 24);
-            PB_Legal.SizeMode = System.Windows.Forms.PictureBoxSizeMode.CenterImage;
+            PB_Legal.Size = new System.Drawing.Size(100, 26);
             PB_Legal.TabIndex = 108;
             PB_Legal.TabStop = false;
             PB_Legal.Click += ClickLegality;
+            //
+            // PN_HeroCard
+            //
+            PN_HeroCard.BackColor = System.Drawing.Color.Transparent;
+            PN_HeroCard.Location = new System.Drawing.Point(20, 0);
+            PN_HeroCard.Margin = new System.Windows.Forms.Padding(0);
+            PN_HeroCard.Name = "PN_HeroCard";
+            PN_HeroCard.Size = new System.Drawing.Size(80, 58);
+            PN_HeroCard.TabIndex = 109;
+            PN_HeroCard.TabStop = false;
             // 
             // PKME_Tabs
             // 
@@ -450,37 +467,75 @@ namespace PKHeX.WinForms
             C_SAV.ViewIndex = -1;
             C_SAV.RequestCloneData += ClickClone;
             C_SAV.RequestReloadSave += ClickSaveFileName;
-            // 
-            // splitContainer2
-            // 
-            splitContainer2.Dock = System.Windows.Forms.DockStyle.Fill;
-            splitContainer2.IsSplitterFixed = true;
-            splitContainer2.Location = new System.Drawing.Point(0, 0);
-            splitContainer2.Margin = new System.Windows.Forms.Padding(0);
-            splitContainer2.Name = "splitContainer2";
-            splitContainer2.Orientation = System.Windows.Forms.Orientation.Horizontal;
-            // 
-            // splitContainer2.Panel1
-            // 
-            splitContainer2.Panel1.Controls.Add(L_UpdateAvailable);
-            splitContainer2.Panel1.Controls.Add(menuStrip1);
-            splitContainer2.Panel1MinSize = 24;
-            // 
-            // splitContainer2.Panel2
-            // 
-            splitContainer2.Panel2.Controls.Add(splitContainer1);
-            splitContainer2.Size = new System.Drawing.Size(856, 385);
-            splitContainer2.SplitterDistance = 25;
-            splitContainer2.SplitterWidth = 1;
-            splitContainer2.TabIndex = 106;
+            //
+            // topHeader
+            //
+            topHeader.Dock = System.Windows.Forms.DockStyle.Top;
+            topHeader.Height = 44;
+            topHeader.Location = new System.Drawing.Point(0, 0);
+            topHeader.Margin = new System.Windows.Forms.Padding(0);
+            topHeader.Name = "topHeader";
+            topHeader.Size = new System.Drawing.Size(880, 44);
+            topHeader.TabIndex = 110;
+            topHeader.Controls.Add(PB_Legal);
+            topHeader.Controls.Add(L_UpdateAvailable);
+            topHeader.Controls.Add(menuStrip1);
+            //
+            // trainerPlate
+            //
+            trainerPlate.Dock = System.Windows.Forms.DockStyle.Top;
+            trainerPlate.Height = 32;
+            trainerPlate.Location = new System.Drawing.Point(0, 44);
+            trainerPlate.Margin = new System.Windows.Forms.Padding(0);
+            trainerPlate.Name = "trainerPlate";
+            trainerPlate.Size = new System.Drawing.Size(880, 32);
+            trainerPlate.TabIndex = 111;
+            trainerPlate.Visible = false;
+            //
+            // statusStrip
+            //
+            statusStrip.Dock = System.Windows.Forms.DockStyle.Bottom;
+            statusStrip.SizingGrip = false;
+            statusStrip.Location = new System.Drawing.Point(0, 438);
+            statusStrip.Name = "statusStrip";
+            statusStrip.Size = new System.Drawing.Size(880, 22);
+            statusStrip.TabIndex = 112;
+            statusStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] { SL_SavePath, SL_Spring, SL_Version, SL_Language });
+            //
+            // SL_SavePath
+            //
+            SL_SavePath.Name = "SL_SavePath";
+            SL_SavePath.Size = new System.Drawing.Size(45, 17);
+            SL_SavePath.Text = "No save loaded";
+            SL_SavePath.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            //
+            // SL_Spring
+            //
+            SL_Spring.Name = "SL_Spring";
+            SL_Spring.Spring = true;
+            SL_Spring.Text = "";
+            //
+            // SL_Version
+            //
+            SL_Version.Name = "SL_Version";
+            SL_Version.Text = "";
+            SL_Version.Margin = new System.Windows.Forms.Padding(0, 3, 12, 2);
+            //
+            // SL_Language
+            //
+            SL_Language.Name = "SL_Language";
+            SL_Language.Text = "";
             // 
             // Main
             // 
             AllowDrop = true;
             AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
             AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
-            ClientSize = new System.Drawing.Size(856, 385);
-            Controls.Add(splitContainer2);
+            ClientSize = new System.Drawing.Size(880, 460);
+            Controls.Add(splitContainer1);
+            Controls.Add(trainerPlate);
+            Controls.Add(topHeader);
+            Controls.Add(statusStrip);
             FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
             Icon = Properties.Resources.Icon;
             KeyPreview = true;
@@ -498,13 +553,12 @@ namespace PKHeX.WinForms
             ((System.ComponentModel.ISupportInitialize)splitContainer1).EndInit();
             splitContainer1.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)dragout).EndInit();
-            ((System.ComponentModel.ISupportInitialize)PB_Legal).EndInit();
-            splitContainer2.Panel1.ResumeLayout(false);
-            splitContainer2.Panel1.PerformLayout();
-            splitContainer2.Panel2.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)splitContainer2).EndInit();
-            splitContainer2.ResumeLayout(false);
+            topHeader.ResumeLayout(false);
+            topHeader.PerformLayout();
+            statusStrip.ResumeLayout(false);
+            statusStrip.PerformLayout();
             ResumeLayout(false);
+            PerformLayout();
         }
 
         #endregion
@@ -543,9 +597,16 @@ namespace PKHeX.WinForms
         private System.Windows.Forms.ToolStripMenuItem Menu_EncDatabase;
         private System.Windows.Forms.ToolTip toolTip;
         private System.Windows.Forms.SplitContainer splitContainer1;
-        private System.Windows.Forms.SplitContainer splitContainer2;
         private PKHeX.WinForms.Controls.SelectablePictureBox dragout;
-        private System.Windows.Forms.PictureBox PB_Legal;
+        private PKHeX.WinForms.Controls.AccentStatusChip PB_Legal;
+        private PKHeX.WinForms.Controls.HeroDragoutCard PN_HeroCard;
+        private PKHeX.WinForms.Controls.TopHeader topHeader;
+        private PKHeX.WinForms.Controls.TrainerPlate trainerPlate;
+        private System.Windows.Forms.StatusStrip statusStrip;
+        private System.Windows.Forms.ToolStripStatusLabel SL_SavePath;
+        private System.Windows.Forms.ToolStripStatusLabel SL_Spring;
+        private System.Windows.Forms.ToolStripStatusLabel SL_Version;
+        private System.Windows.Forms.ToolStripStatusLabel SL_Language;
     }
 }
 

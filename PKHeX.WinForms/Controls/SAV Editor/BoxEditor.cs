@@ -26,14 +26,6 @@ public partial class BoxEditor : UserControl, ISlotViewer<PictureBox>
     public BoxEditor()
     {
         InitializeComponent();
-        Load += (_, _) =>
-        {
-            if (!DesignMode && Program.Settings.Startup.DarkMode)
-            {
-                var darkBg = Color.FromArgb(30, 30, 30);
-                BoxPokeGrid.BackColor = BackColor = darkBg;
-            }
-        };
     }
 
     internal bool InitializeGrid()
@@ -206,10 +198,11 @@ public partial class BoxEditor : UserControl, ISlotViewer<PictureBox>
         Editor.Reload();
         int box = CurrentBox;
 
-        if (DesignMode || !Program.Settings.Startup.DarkMode)
-            BoxPokeGrid.SetBackground(SAV.WallpaperImage(box));
-        else
+        // Wallpapers clash with the dark palette's Surface0.
+        if (!DesignMode && PKHeX.WinForms.Theming.Theme.Current.IsDark)
             BoxPokeGrid.SetBackground(null!);
+        else
+            BoxPokeGrid.SetBackground(SAV.WallpaperImage(box));
 
         M?.Hover.Stop();
 

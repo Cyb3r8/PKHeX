@@ -1,8 +1,8 @@
-using System.ComponentModel;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Windows.Forms;
 using PKHeX.Drawing.PokeSprite;
+using PKHeX.WinForms.Theming;
 
 namespace PKHeX.WinForms.Controls;
 
@@ -28,25 +28,27 @@ public class VerticalTabControl : TabControl
         var graphics = e.Graphics;
         DrawBackground(e, bounds, graphics);
 
-        using var flags = new StringFormat();
-        flags.Alignment = StringAlignment.Center;
-        flags.LineAlignment = StringAlignment.Center;
+        using var flags = new StringFormat
+        {
+            Alignment = StringAlignment.Center,
+            LineAlignment = StringAlignment.Center,
+        };
         using var text = new SolidBrush(ForeColor);
-        var tab = TabPages[index];
-        graphics.DrawString(tab.Text, Font, text, bounds, flags);
+        graphics.DrawString(TabPages[index].Text, Font, text, bounds, flags);
         base.OnDrawItem(e);
     }
 
     protected static void DrawBackground(DrawItemEventArgs e, Rectangle bounds, Graphics graphics)
     {
+        var palette = Theme.Current;
         if (e.State != DrawItemState.Selected)
         {
-            e.DrawBackground();
+            using var bg = new SolidBrush(palette.Surface1);
+            graphics.FillRectangle(bg, bounds);
             return;
         }
 
-        var (c1, c2) = (SystemColors.ControlLightLight, SystemColors.ScrollBar);
-        using var brush = new LinearGradientBrush(bounds, c1, c2, 90f);
+        using var brush = new LinearGradientBrush(bounds, palette.Surface2, palette.Surface1, 90f);
         graphics.FillRectangle(brush, bounds);
     }
 
@@ -62,17 +64,14 @@ public class VerticalTabControl : TabControl
 /// </summary>
 public sealed class VerticalTabControlEntityEditor : VerticalTabControl
 {
-    /// <summary>
-    /// Tab stripe colors based on Contest Stats.
-    /// </summary>
     private static readonly Color[] SelectedTags =
     [
-        ContestColor.Cool, // Main
-        ContestColor.Beauty, // Met
-        ContestColor.Cute, // Stats
-        ContestColor.Clever, // Moves
-        ContestColor.Tough, // Cosmetic
-        Color.RosyBrown, // OT
+        ContestColor.Cool,    // Main
+        ContestColor.Beauty,  // Met
+        ContestColor.Cute,    // Stats
+        ContestColor.Clever,  // Moves
+        ContestColor.Tough,   // Cosmetic
+        Color.RosyBrown,      // OT
     ];
 
     protected override void OnDrawItem(DrawItemEventArgs e)
@@ -83,50 +82,28 @@ public sealed class VerticalTabControlEntityEditor : VerticalTabControl
         var bounds = GetTabRect(index);
 
         var graphics = e.Graphics;
+        var palette = Theme.Current;
         DrawBackground(e, bounds, graphics);
+
         if (e.State == DrawItemState.Selected)
         {
-            Color c1 = Color.White;
-            Color c2 = Color.LightGray;
-
-            if (LicenseManager.UsageMode != LicenseUsageMode.Designtime)
-            {
-                try
-                {
-                    if (Main.Settings?.Draw is { } settings)
-                    {
-                        c1 = settings.VerticalSelectPrimary;
-                        c2 = settings.VerticalSelectSecondary;
-                    }
-
-                    if (IsDarkMode(BackColor))
-                    {
-                        if (c1.GetBrightness() > 0.6f) c1 = Color.FromArgb(62, 62, 66);
-                        if (c2.GetBrightness() > 0.6f) c2 = Color.FromArgb(45, 45, 48);
-                    }
-                }
-                catch { }
-            }
-
-            using var brush = new LinearGradientBrush(bounds, c1, c2, 90f);
-            graphics.FillRectangle(brush, bounds);
-
-            // draw colored pip on the left side of the tab
-            using var pipBrush = new SolidBrush(SelectedTags[index]);
-            var pip = GetTabRect(index) with { Width = bounds.Width / 8 };
+            var pipColor = index < SelectedTags.Length ? SelectedTags[index] : palette.Accent;
+            using var pipBrush = new SolidBrush(pipColor);
+            var pip = new Rectangle(bounds.X, bounds.Y, bounds.Width / 8, bounds.Height);
             graphics.FillRectangle(pipBrush, pip);
 
-            // shift text to the right to avoid pip overlap
+            using var accent = new SolidBrush(palette.Accent);
+            graphics.FillRectangle(accent, new Rectangle(bounds.Right - 2, bounds.Y + 2, 2, bounds.Height - 4));
+
             bounds = bounds with { Width = bounds.Width - pip.Width, X = bounds.X + pip.Width };
         }
 
-        using var flags = new StringFormat();
-        flags.Alignment = StringAlignment.Center;
-        flags.LineAlignment = StringAlignment.Center;
+        using var flags = new StringFormat
+        {
+            Alignment = StringAlignment.Center,
+            LineAlignment = StringAlignment.Center,
+        };
         using var text = new SolidBrush(ForeColor);
-        var tab = TabPages[index];
-        graphics.DrawString(tab.Text, Font, text, bounds, flags);
+        graphics.DrawString(TabPages[index].Text, Font, text, bounds, flags);
     }
-
-    private static bool IsDarkMode(Color backColor) => backColor.GetBrightness() < 0.5f;
 }

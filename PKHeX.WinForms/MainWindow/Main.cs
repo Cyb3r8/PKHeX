@@ -726,6 +726,12 @@ public partial class Main : Form
         if (!SanityCheckSAV(ref sav))
             return true;
 
+        Theming.Theme.OnSaveFileLoaded(sav);
+        trainerPlate.SetSave(sav);
+        SL_SavePath.Text = string.IsNullOrWhiteSpace(path) ? "In-memory save" : path;
+        SL_Version.Text = sav.Version.ToString();
+        SL_Language.Text = ((LanguageID)sav.Language).ToString();
+
         if (C_SAV.SAV.State.Edited && Settings.SlotWrite.ModifyUnset)
         {
             var prompt = WinFormsUtil.Prompt(MessageBoxButtons.YesNo, MsgProgramCloseUnsaved, MsgProgramSaveFileConfirm);
@@ -1122,6 +1128,24 @@ public partial class Main : Form
         pb.Image = pk.Sprite(C_SAV.SAV);
         if (pb.BackColor == SlotUtil.BadDataColor)
             pb.BackColor = SlotUtil.GoodDataColor;
+
+        UpdateHeroCardTypes(pk);
+    }
+
+    private void UpdateHeroCardTypes(PKM pk)
+    {
+        if (pk.Species == 0)
+        {
+            PN_HeroCard.SetTypes(Theming.Theme.Current.Accent);
+            return;
+        }
+
+        var info = pk.PersonalInfo;
+        var primary = TypeColor.GetTypeSpriteColor(info.Type1);
+        Color? secondary = info.Type2 != info.Type1
+            ? TypeColor.GetTypeSpriteColor(info.Type2)
+            : null;
+        PN_HeroCard.SetTypes(primary, secondary);
     }
 
     private void PKME_Tabs_UpdatePreviewSprite(object sender, EventArgs e) => GetPreview(dragout);
@@ -1136,7 +1160,7 @@ public partial class Main : Form
 
         PB_Legal.Visible = true;
         bool isValid = (sender as bool?) != false;
-        PB_Legal.Image = SpriteUtil.GetLegalIndicator(isValid);
+        PB_Legal.SetFromLegality(isValid);
         toolTip.SetToolTip(PB_Legal, isValid ? MsgLegalityHoverValid : MsgLegalityHoverInvalid);
     }
 
