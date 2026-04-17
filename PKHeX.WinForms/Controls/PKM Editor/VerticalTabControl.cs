@@ -1,21 +1,69 @@
+using System;
 using System.Drawing;
-using System.Drawing.Drawing2D;
 using System.Windows.Forms;
-using PKHeX.Drawing.PokeSprite;
 using PKHeX.WinForms.Theming;
 
 namespace PKHeX.WinForms.Controls;
 
-/// <summary>
-/// Aligns tabs to the left side of the control with text displayed horizontally.
-/// </summary>
 public class VerticalTabControl : TabControl
 {
+    private int _hoverIndex = -1;
+
     public VerticalTabControl()
     {
         Alignment = TabAlignment.Right;
         DrawMode = TabDrawMode.OwnerDrawFixed;
         SizeMode = TabSizeMode.Fixed;
+        DoubleBuffered = true;
+    }
+
+    protected override void OnHandleCreated(EventArgs e)
+    {
+        base.OnHandleCreated(e);
+        Theme.Changed += OnThemeChanged;
+        BackColor = Theme.Current.Surface0;
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+            Theme.Changed -= OnThemeChanged;
+        base.Dispose(disposing);
+    }
+
+    private void OnThemeChanged(object? sender, EventArgs e)
+    {
+        BackColor = Theme.Current.Surface0;
+        Invalidate();
+    }
+
+    protected override void OnMouseMove(MouseEventArgs e)
+    {
+        base.OnMouseMove(e);
+        int idx = HitTest(e.Location);
+        if (idx == _hoverIndex)
+            return;
+        _hoverIndex = idx;
+        Invalidate();
+    }
+
+    protected override void OnMouseLeave(EventArgs e)
+    {
+        base.OnMouseLeave(e);
+        if (_hoverIndex == -1)
+            return;
+        _hoverIndex = -1;
+        Invalidate();
+    }
+
+    private int HitTest(Point p)
+    {
+        for (int i = 0; i < TabPages.Count; i++)
+        {
+            if (GetTabRect(i).Contains(p))
+                return i;
+        }
+        return -1;
     }
 
     protected override void OnDrawItem(DrawItemEventArgs e)
@@ -23,87 +71,53 @@ public class VerticalTabControl : TabControl
         var index = e.Index;
         if ((uint)index >= TabPages.Count)
             return;
+
         var bounds = GetTabRect(index);
+        var p = Theme.Current;
+        var g = e.Graphics;
 
-        var graphics = e.Graphics;
-        DrawBackground(e, bounds, graphics);
+        bool selected = (e.State & DrawItemState.Selected) != 0;
+        bool hover = _hoverIndex == index;
 
-        using var flags = new StringFormat
+        Color fill = selected ? p.Surface2
+            : hover ? p.Mix(p.Surface0, p.Surface2, 0.55f)
+            : p.Surface0;
+
+        using (var bg = new SolidBrush(fill))
+            g.FillRectangle(bg, bounds);
+
+        if (selected)
         {
-            Alignment = StringAlignment.Center,
-            LineAlignment = StringAlignment.Center,
-        };
-        using var text = new SolidBrush(ForeColor);
-        graphics.DrawString(TabPages[index].Text, Font, text, bounds, flags);
-        base.OnDrawItem(e);
-    }
-
-    protected static void DrawBackground(DrawItemEventArgs e, Rectangle bounds, Graphics graphics)
-    {
-        var palette = Theme.Current;
-        if (e.State != DrawItemState.Selected)
-        {
-            using var bg = new SolidBrush(palette.Surface1);
-            graphics.FillRectangle(bg, bounds);
-            return;
+            using var accent = new SolidBrush(p.Accent);
+            g.FillRectangle(accent, new Rectangle(bounds.X, bounds.Y + 4, 3, bounds.Height - 8));
         }
 
-        using var brush = new LinearGradientBrush(bounds, palette.Surface2, palette.Surface1, 90f);
-        graphics.FillRectangle(brush, bounds);
+        var textRect = new Rectangle(bounds.X + 14, bounds.Y, bounds.Width - 18, bounds.Height);
+        using var flags = new StringFormat
+        {
+            Alignment = StringAlignment.Near,
+            LineAlignment = StringAlignment.Center,
+            Trimming = StringTrimming.EllipsisCharacter,
+            FormatFlags = StringFormatFlags.NoWrap,
+        };
+        using var textBrush = new SolidBrush(selected ? p.TextPrimary : p.TextMuted);
+        var text = TabPages[index].Text;
+        if (!selected)
+        {
+            g.DrawString(text, Font, textBrush, textRect, flags);
+        }
+        else
+        {
+            using var bold = new Font(Font, FontStyle.Bold);
+            g.DrawString(text, bold, textBrush, textRect, flags);
+        }
+
+        base.OnDrawItem(e);
     }
 
     protected override void ScaleControl(SizeF factor, BoundsSpecified specified)
     {
         base.ScaleControl(factor, specified);
         ItemSize = new((int)(ItemSize.Width * factor.Width), (int)(ItemSize.Height * factor.Height));
-    }
-}
-
-/// <summary>
-/// Specialized <see cref="VerticalTabControl"/> for displaying a <see cref="PKHeX.Core.PKM"/> editor tabs.
-/// </summary>
-public sealed class VerticalTabControlEntityEditor : VerticalTabControl
-{
-    private static readonly Color[] SelectedTags =
-    [
-        ContestColor.Cool,    // Main
-        ContestColor.Beauty,  // Met
-        ContestColor.Cute,    // Stats
-        ContestColor.Clever,  // Moves
-        ContestColor.Tough,   // Cosmetic
-        Color.RosyBrown,      // OT
-    ];
-
-    protected override void OnDrawItem(DrawItemEventArgs e)
-    {
-        var index = e.Index;
-        if ((uint)index >= TabPages.Count)
-            return;
-        var bounds = GetTabRect(index);
-
-        var graphics = e.Graphics;
-        var palette = Theme.Current;
-        DrawBackground(e, bounds, graphics);
-
-        if (e.State == DrawItemState.Selected)
-        {
-            var pipColor = index < SelectedTags.Length ? SelectedTags[index] : palette.Accent;
-            using var pipBrush = new SolidBrush(pipColor);
-            var pip = new Rectangle(bounds.X, bounds.Y, bounds.Width / 8, bounds.Height);
-            graphics.FillRectangle(pipBrush, pip);
-
-            using var accent = new SolidBrush(palette.Accent);
-            graphics.FillRectangle(accent, new Rectangle(bounds.Right - 2, bounds.Y + 2, 2, bounds.Height - 4));
-
-            bounds = bounds with { Width = bounds.Width - pip.Width, X = bounds.X + pip.Width };
-        }
-
-        using var flags = new StringFormat
-        {
-            Alignment = StringAlignment.Center,
-            LineAlignment = StringAlignment.Center,
-        };
-        using var text = new SolidBrush(ForeColor);
-        graphics.DrawString(TabPages[index].Text, Font, text, bounds, flags);
     }
 }

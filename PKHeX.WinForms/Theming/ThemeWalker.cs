@@ -1,5 +1,6 @@
 using System.Drawing;
 using System.Windows.Forms;
+using PKHeX.WinForms.Controls;
 
 namespace PKHeX.WinForms.Theming;
 
@@ -49,6 +50,18 @@ internal static class ThemeWalker
                 ts.ForeColor = p.TextPrimary;
                 foreach (ToolStripItem i in ts.Items)
                     StyleMenuItem(i, p);
+                break;
+
+            case VerticalTabControl vtc:
+                vtc.BackColor = p.Surface0;
+                vtc.ForeColor = p.TextPrimary;
+                foreach (TabPage tp in vtc.TabPages)
+                {
+                    tp.UseVisualStyleBackColor = false;
+                    tp.BackColor = p.Surface0;
+                    tp.ForeColor = p.TextPrimary;
+                }
+                vtc.Invalidate();
                 break;
 
             case TabControl tc:

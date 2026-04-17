@@ -24,6 +24,7 @@ public sealed partial class PKMEditor : UserControl, IMainEditor
     public PKMEditor()
     {
         InitializeComponent();
+        InitializeSidebar();
 
         var font = FontUtil.GetPKXFont();
         TB_Nickname.Font = TB_OT.Font = TB_HT.Font = font;
@@ -78,6 +79,16 @@ public sealed partial class PKMEditor : UserControl, IMainEditor
         TB_EXP.MouseWheel += WinFormsUtil.MouseWheelIncrement1;
         TB_Level.MouseWheel += WinFormsUtil.MouseWheelIncrement1;
         TB_Friendship.MouseWheel += WinFormsUtil.MouseWheelIncrement1;
+    }
+
+    private void InitializeSidebar()
+    {
+        TC_Editor.AddItem("Main",     "Main",     ContestColor.Cool);
+        TC_Editor.AddItem("Met",      "Met",      ContestColor.Beauty);
+        TC_Editor.AddItem("Stats",    "Stats",    ContestColor.Cute);
+        TC_Editor.AddItem("Moves",    "Moves",    ContestColor.Clever);
+        TC_Editor.AddItem("Cosmetic", "Cosmetic", ContestColor.Tough);
+        TC_Editor.AddItem("OTMisc",   "OT/Misc",  Color.RosyBrown);
     }
 
     private void ClickManualAbility(object sender, EventArgs e)
@@ -2081,24 +2092,24 @@ public sealed partial class PKMEditor : UserControl, IMainEditor
         if (Entity.Format == 1 && Hidden_TC.TabPages.Contains(Hidden_Met))
         {
             Hidden_TC.TabPages.Remove(Hidden_Met);
-            TC_Editor.TabPages.Remove(Tab_Met);
+            TC_Editor.RemoveItem("Met");
         }
         else if (Entity.Format != 1 && !Hidden_TC.TabPages.Contains(Hidden_Met))
         {
             Hidden_TC.TabPages.Insert(1, Hidden_Met);
-            TC_Editor.TabPages.Insert(1, Tab_Met);
+            TC_Editor.InsertItem(1, "Met", "Met", ContestColor.Beauty);
             isTranslationRequired = true;
         }
 
         if (Entity.Format <= 2 && Hidden_TC.TabPages.Contains(Hidden_Cosmetic))
         {
             Hidden_TC.TabPages.Remove(Hidden_Cosmetic);
-            TC_Editor.TabPages.Remove(Tab_Cosmetic);
+            TC_Editor.RemoveItem("Cosmetic");
         }
         else if (Entity.Format > 2 && !Hidden_TC.TabPages.Contains(Hidden_Cosmetic))
         {
             Hidden_TC.TabPages.Insert(4, Hidden_Cosmetic);
-            TC_Editor.TabPages.Insert(4, Tab_Cosmetic);
+            TC_Editor.InsertItem(4, "Cosmetic", "Cosmetic", ContestColor.Tough);
             isTranslationRequired = true;
         }
 
@@ -2176,7 +2187,7 @@ public sealed partial class PKMEditor : UserControl, IMainEditor
 
     private void ClickVersionMarking(object sender, EventArgs e)
     {
-        TC_Editor.SelectedTab = Tab_Met;
+        TC_Editor.SelectByName("Met");
         if (sender == PB_BattleVersion)
             CB_BattleVersion.DroppedDown = true;
         else
@@ -2194,8 +2205,8 @@ public sealed partial class PKMEditor : UserControl, IMainEditor
 
     public void FlickerInterface()
     {
-        TC_Editor.SelectedTab = Tab_Met; // parent tab of CB_GameOrigin
-        TC_Editor.SelectedTab = Tab_Main; // first tab
+        TC_Editor.SelectByName("Met"); // parent of CB_GameOrigin
+        TC_Editor.SelectByName("Main");
     }
 
     private void L_Obedience_Click(object sender, EventArgs e)
@@ -2341,11 +2352,11 @@ public sealed partial class PKMEditor : UserControl, IMainEditor
     {
         if (Entity.Format <= 2)
         {
-            TC_Editor.SelectedTab = Tab_Stats;
+            TC_Editor.SelectByName("Stats");
             Stats.Focus();
             return;
         }
-        TC_Editor.SelectedTab = Tab_Main;
+        TC_Editor.SelectByName("Main");
         TB_PID.Focus();
     }
 
@@ -2362,7 +2373,7 @@ public sealed partial class PKMEditor : UserControl, IMainEditor
         {
             CHK_Cured.Checked = false;
         }
-        TC_Editor.SelectedTab = Tab_Main;
+        TC_Editor.SelectByName("Main");
         CB_PKRSStrain.DroppedDown = true;
     }
 }
