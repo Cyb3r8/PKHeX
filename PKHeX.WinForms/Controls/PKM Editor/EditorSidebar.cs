@@ -8,11 +8,14 @@ using PKHeX.WinForms.Theming;
 
 namespace PKHeX.WinForms.Controls;
 
-public sealed class EditorSidebar : Control
+public sealed class EditorSidebar : Control, IThemedControl
 {
     private readonly List<Item> _items = [];
+    private readonly HashSet<string> _invalid = [];
+    private readonly ToolTip _tip = new() { ShowAlways = true, AutoPopDelay = 8000, InitialDelay = 600 };
     private int _selectedIndex = -1;
     private int _hoverIndex = -1;
+    private string _tipFor = string.Empty;
 
     [DefaultValue(40)]
     public int ItemHeight { get; set; } = 40;
@@ -29,6 +32,7 @@ public sealed class EditorSidebar : Control
         BackColor = Theme.Current.Surface0;
         ForeColor = Theme.Current.TextPrimary;
         TabStop = true;
+        AccessibleRole = AccessibleRole.PageTabList;
     }
 
     [Browsable(false)]
@@ -51,11 +55,14 @@ public sealed class EditorSidebar : Control
     public void InsertItem(int index, string name, string text, Color pip)
     {
         _items.Insert(index, new Item(name, text, pip));
+        int before = _selectedIndex;
         if (_selectedIndex == -1)
             _selectedIndex = 0;
         else if (index <= _selectedIndex)
             _selectedIndex++;
         Invalidate();
+        if (_selectedIndex != before)
+            SelectedIndexChanged?.Invoke(this, EventArgs.Empty);
     }
 
     public void RemoveItem(string name)
@@ -64,6 +71,8 @@ public sealed class EditorSidebar : Control
         if (i < 0)
             return;
         _items.RemoveAt(i);
+        _invalid.Remove(name);
+        int before = _selectedIndex;
         if (_items.Count == 0)
             _selectedIndex = -1;
         else if (i < _selectedIndex)
@@ -71,6 +80,8 @@ public sealed class EditorSidebar : Control
         else if (i == _selectedIndex)
             _selectedIndex = Math.Min(_selectedIndex, _items.Count - 1);
         Invalidate();
+        if (_selectedIndex != before)
+            SelectedIndexChanged?.Invoke(this, EventArgs.Empty);
     }
 
     public void SelectByName(string name)
@@ -90,25 +101,50 @@ public sealed class EditorSidebar : Control
         return -1;
     }
 
+    public void SetItemInvalid(string name, bool invalid)
+    {
+        bool changed = invalid ? _invalid.Add(name) : _invalid.Remove(name);
+        if (changed)
+            Invalidate();
+    }
+
+    public void ClearInvalid()
+    {
+        if (_invalid.Count == 0)
+            return;
+        _invalid.Clear();
+        Invalidate();
+    }
+
+    public void ApplyTheme(ThemePalette palette)
+    {
+        BackColor = palette.Surface0;
+        ForeColor = palette.TextPrimary;
+        Invalidate();
+    }
+
     protected override void OnHandleCreated(EventArgs e)
     {
         base.OnHandleCreated(e);
-        Theme.Changed += OnThemeChanged;
-        BackColor = Theme.Current.Surface0;
-        ForeColor = Theme.Current.TextPrimary;
+        ApplyTheme(Theme.Current);
     }
 
     protected override void Dispose(bool disposing)
     {
         if (disposing)
-            Theme.Changed -= OnThemeChanged;
+            _tip.Dispose();
         base.Dispose(disposing);
     }
 
-    private void OnThemeChanged(object? sender, EventArgs e)
+    protected override void OnGotFocus(EventArgs e)
     {
-        BackColor = Theme.Current.Surface0;
-        ForeColor = Theme.Current.TextPrimary;
+        base.OnGotFocus(e);
+        Invalidate();
+    }
+
+    protected override void OnLostFocus(EventArgs e)
+    {
+        base.OnLostFocus(e);
         Invalidate();
     }
 
@@ -119,6 +155,7 @@ public sealed class EditorSidebar : Control
         if (idx == _hoverIndex)
             return;
         _hoverIndex = idx;
+        UpdateTip();
         Invalidate();
     }
 
@@ -128,6 +165,7 @@ public sealed class EditorSidebar : Control
         if (_hoverIndex == -1)
             return;
         _hoverIndex = -1;
+        UpdateTip();
         Invalidate();
     }
 
@@ -143,7 +181,7 @@ public sealed class EditorSidebar : Control
         SelectedIndex = idx;
     }
 
-    protected override bool IsInputKey(Keys keyData) => keyData is Keys.Up or Keys.Down;
+    protected override bool IsInputKey(Keys keyData) => keyData is Keys.Up or Keys.Down or Keys.Home or Keys.End or Keys.PageUp or Keys.PageDown;
 
     protected override void OnKeyDown(KeyEventArgs e)
     {
@@ -153,14 +191,40 @@ public sealed class EditorSidebar : Control
         switch (e.KeyCode)
         {
             case Keys.Down:
+            case Keys.PageDown:
                 SelectedIndex = (_selectedIndex + 1) % _items.Count;
                 e.Handled = true;
                 break;
             case Keys.Up:
+            case Keys.PageUp:
                 SelectedIndex = (_selectedIndex - 1 + _items.Count) % _items.Count;
                 e.Handled = true;
                 break;
+            case Keys.Home:
+                SelectedIndex = 0;
+                e.Handled = true;
+                break;
+            case Keys.End:
+                SelectedIndex = _items.Count - 1;
+                e.Handled = true;
+                break;
         }
+    }
+
+    private void UpdateTip()
+    {
+        if (_hoverIndex < 0)
+        {
+            _tip.Hide(this);
+            _tipFor = string.Empty;
+            return;
+        }
+        var item = _items[_hoverIndex];
+        var msg = _invalid.Contains(item.Name) ? $"{item.Text} (invalid)" : item.Text;
+        if (msg == _tipFor)
+            return;
+        _tipFor = msg;
+        _tip.SetToolTip(this, msg);
     }
 
     private int HitTest(int y)
@@ -189,7 +253,7 @@ public sealed class EditorSidebar : Control
         bool hover = index == _hoverIndex;
 
         var fill = selected ? p.Surface2
-            : hover ? p.Mix(p.Surface0, p.Surface2, 0.55f)
+            : hover ? p.HoverSurface
             : p.Surface0;
         using (var bg = new SolidBrush(fill))
             g.FillRectangle(bg, rect);
@@ -201,11 +265,16 @@ public sealed class EditorSidebar : Control
         }
 
         var item = _items[index];
-        DrawPip(g, rect, item.Pip, selected);
-        DrawLabel(g, rect, item.Text, p, selected);
+        bool invalid = _invalid.Contains(item.Name);
+        var pipColor = invalid ? p.Invalid : item.Pip;
+        DrawPip(g, rect, pipColor, selected, invalid, p);
+        DrawLabel(g, rect, item.Text, p, selected, invalid);
+
+        if (selected && Focused)
+            DrawFocusRing(g, rect, p);
     }
 
-    private void DrawPip(Graphics g, Rectangle rect, Color pip, bool selected)
+    private void DrawPip(Graphics g, Rectangle rect, Color pip, bool selected, bool invalid, ThemePalette p)
     {
         var prev = g.SmoothingMode;
         g.SmoothingMode = SmoothingMode.AntiAlias;
@@ -221,11 +290,16 @@ public sealed class EditorSidebar : Control
             using var ring = new Pen(Color.FromArgb(120, pip), 1f);
             g.DrawEllipse(ring, new Rectangle(dot.X - 1, dot.Y - 1, dot.Width + 1, dot.Height + 1));
         }
+        if (invalid)
+        {
+            using var halo = new Pen(p.Invalid, 1f);
+            g.DrawEllipse(halo, new Rectangle(dot.X - 2, dot.Y - 2, dot.Width + 3, dot.Height + 3));
+        }
 
         g.SmoothingMode = prev;
     }
 
-    private void DrawLabel(Graphics g, Rectangle rect, string text, ThemePalette p, bool selected)
+    private void DrawLabel(Graphics g, Rectangle rect, string text, ThemePalette p, bool selected, bool invalid)
     {
         int textX = rect.X + 12 + PipSize + 8;
         var textRect = new Rectangle(textX, rect.Y, rect.Right - textX - 4, rect.Height);
@@ -237,7 +311,8 @@ public sealed class EditorSidebar : Control
             Trimming = StringTrimming.EllipsisCharacter,
             FormatFlags = StringFormatFlags.NoWrap,
         };
-        using var brush = new SolidBrush(selected ? p.TextPrimary : p.TextMuted);
+        var color = invalid ? p.Invalid : selected ? p.TextPrimary : p.TextMuted;
+        using var brush = new SolidBrush(color);
         if (!selected)
         {
             g.DrawString(text, Font, brush, textRect, flags);
@@ -247,5 +322,54 @@ public sealed class EditorSidebar : Control
         g.DrawString(text, bold, brush, textRect, flags);
     }
 
+    private static void DrawFocusRing(Graphics g, Rectangle rect, ThemePalette p)
+    {
+        var inset = Rectangle.Inflate(rect, -2, -2);
+        using var pen = new Pen(p.FocusRing, 1f) { DashStyle = DashStyle.Dot };
+        g.DrawRectangle(pen, inset);
+    }
+
+    protected override AccessibleObject CreateAccessibilityInstance() => new SidebarAccessible(this);
+
     private sealed record Item(string Name, string Text, Color Pip);
+
+    private sealed class SidebarAccessible(EditorSidebar owner) : ControlAccessibleObject(owner)
+    {
+        public override AccessibleRole Role => AccessibleRole.PageTabList;
+        public override int GetChildCount() => owner._items.Count;
+        public override AccessibleObject? GetChild(int index)
+            => (uint)index < (uint)owner._items.Count ? new ItemAccessible(owner, index) : null;
+    }
+
+    private sealed class ItemAccessible(EditorSidebar owner, int index) : AccessibleObject
+    {
+        public override AccessibleRole Role => AccessibleRole.PageTab;
+        public override string Name => owner._items[index].Text;
+        public override Rectangle Bounds
+        {
+            get
+            {
+                var local = new Rectangle(0, index * owner.ItemHeight, owner.Width, owner.ItemHeight);
+                return owner.RectangleToScreen(local);
+            }
+        }
+        public override AccessibleStates State
+        {
+            get
+            {
+                var s = AccessibleStates.Selectable | AccessibleStates.Focusable;
+                if (index == owner._selectedIndex)
+                {
+                    s |= AccessibleStates.Selected;
+                    if (owner.Focused)
+                        s |= AccessibleStates.Focused;
+                }
+                return s;
+            }
+        }
+        public override string Description
+            => owner._invalid.Contains(owner._items[index].Name) ? "Contains invalid data" : string.Empty;
+        public override void DoDefaultAction() => owner.SelectedIndex = index;
+        public override AccessibleObject Parent => owner.AccessibilityObject;
+    }
 }

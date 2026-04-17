@@ -6,7 +6,7 @@ using PKHeX.WinForms.Theming;
 
 namespace PKHeX.WinForms.Controls;
 
-public sealed class TopHeader : Panel
+public sealed class TopHeader : Panel, IThemedControl
 {
     public string Wordmark { get; set; } = "PKHeX";
     public int LogoInset { get; set; } = 8;
@@ -20,12 +20,15 @@ public sealed class TopHeader : Panel
         DoubleBuffered = true;
         BackColor = Theme.Current.Surface0;
         Dock = DockStyle.Top;
-        Height = 44;
-        Theme.Changed += (_, _) =>
-        {
-            BackColor = Theme.Current.Surface0;
-            Invalidate();
-        };
+        Height = LogicalToDeviceUnits(44);
+        AccessibleRole = AccessibleRole.TitleBar;
+        AccessibleName = Wordmark;
+    }
+
+    public void ApplyTheme(ThemePalette palette)
+    {
+        BackColor = palette.Surface0;
+        Invalidate();
     }
 
     protected override void OnPaint(PaintEventArgs e)
@@ -37,21 +40,23 @@ public sealed class TopHeader : Panel
         using var bg = new SolidBrush(palette.Surface0);
         g.FillRectangle(bg, ClientRectangle);
 
-        int y = (Height - 18) / 2;
-        var mark = new Rectangle(LogoInset, y, 18, 18);
-        using (var path = RoundedRect(mark, 4))
+        int logo = LogicalToDeviceUnits(18);
+        int inset = LogicalToDeviceUnits(LogoInset);
+        int y = (Height - logo) / 2;
+        var mark = new Rectangle(inset, y, logo, logo);
+        using (var path = RoundedRect(mark, LogicalToDeviceUnits(4)))
         using (var accent = new LinearGradientBrush(mark, palette.Accent, palette.AccentHover, 45f))
             g.FillPath(accent, path);
 
         using var font = new Font(Font.FontFamily, 10f, FontStyle.Bold);
         var textSize = TextRenderer.MeasureText(g, Wordmark, font);
-        var textBounds = new Rectangle(mark.Right + 6, (Height - textSize.Height) / 2, textSize.Width + 4, textSize.Height);
+        var textBounds = new Rectangle(mark.Right + LogicalToDeviceUnits(6), (Height - textSize.Height) / 2, textSize.Width + 4, textSize.Height);
         TextRenderer.DrawText(g, Wordmark, font, textBounds, palette.TextPrimary,
             TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding);
 
         if (Theme.Settings.MenuAccentUnderline)
         {
-            using var pen = new Pen(palette.Accent, 2f);
+            using var pen = new Pen(palette.Accent, LogicalToDeviceUnits(2));
             g.DrawLine(pen, 0, Height - 1, Width, Height - 1);
         }
     }

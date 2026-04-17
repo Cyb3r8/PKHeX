@@ -72,6 +72,7 @@ namespace PKHeX.WinForms
             statusStrip = new System.Windows.Forms.StatusStrip();
             SL_SavePath = new System.Windows.Forms.ToolStripStatusLabel();
             SL_Spring = new System.Windows.Forms.ToolStripStatusLabel();
+            SL_Modified = new System.Windows.Forms.ToolStripStatusLabel();
             SL_Version = new System.Windows.Forms.ToolStripStatusLabel();
             SL_Language = new System.Windows.Forms.ToolStripStatusLabel();
             menuStrip1.SuspendLayout();
@@ -419,7 +420,6 @@ namespace PKHeX.WinForms
             PB_Legal.Name = "PB_Legal";
             PB_Legal.Size = new System.Drawing.Size(100, 26);
             PB_Legal.TabIndex = 108;
-            PB_Legal.TabStop = false;
             PB_Legal.Click += ClickLegality;
             //
             // PN_HeroCard
@@ -490,7 +490,6 @@ namespace PKHeX.WinForms
             trainerPlate.Name = "trainerPlate";
             trainerPlate.Size = new System.Drawing.Size(880, 32);
             trainerPlate.TabIndex = 111;
-            trainerPlate.Visible = false;
             //
             // statusStrip
             //
@@ -500,7 +499,7 @@ namespace PKHeX.WinForms
             statusStrip.Name = "statusStrip";
             statusStrip.Size = new System.Drawing.Size(880, 22);
             statusStrip.TabIndex = 112;
-            statusStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] { SL_SavePath, SL_Spring, SL_Version, SL_Language });
+            statusStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] { SL_SavePath, SL_Spring, SL_Modified, SL_Version, SL_Language });
             //
             // SL_SavePath
             //
@@ -514,6 +513,12 @@ namespace PKHeX.WinForms
             SL_Spring.Name = "SL_Spring";
             SL_Spring.Spring = true;
             SL_Spring.Text = "";
+            //
+            // SL_Modified
+            //
+            SL_Modified.Name = "SL_Modified";
+            SL_Modified.Text = "";
+            SL_Modified.Margin = new System.Windows.Forms.Padding(0, 3, 12, 2);
             //
             // SL_Version
             //
@@ -605,6 +610,7 @@ namespace PKHeX.WinForms
         private System.Windows.Forms.StatusStrip statusStrip;
         private System.Windows.Forms.ToolStripStatusLabel SL_SavePath;
         private System.Windows.Forms.ToolStripStatusLabel SL_Spring;
+        private System.Windows.Forms.ToolStripStatusLabel SL_Modified;
         private System.Windows.Forms.ToolStripStatusLabel SL_Version;
         private System.Windows.Forms.ToolStripStatusLabel SL_Language;
     }

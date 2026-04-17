@@ -376,6 +376,7 @@ public sealed partial class PKMEditor : UserControl, IMainEditor
         {
             MC_Move1.HideLegality = MC_Move2.HideLegality = MC_Move3.HideLegality = MC_Move4.HideLegality = true;
             PB_WarnRelearn1.Visible = PB_WarnRelearn2.Visible = PB_WarnRelearn3.Visible = PB_WarnRelearn4.Visible = false;
+            TC_Editor.ClearInvalid();
             LegalityChanged?.Invoke(Legality.Valid, EventArgs.Empty);
             return;
         }
@@ -395,6 +396,8 @@ public sealed partial class PKMEditor : UserControl, IMainEditor
                 relearnPB[i].Image = MoveDisplayState.GetMoveImage(!relearn[i].Valid, Entity, i);
         }
 
+        UpdateSidebarInvalidStates();
+
         if (args.HasFlag(UpdateLegalityArgs.SkipMoveRepopulation))
             return;
         // Resort moves
@@ -403,6 +406,48 @@ public sealed partial class PKMEditor : UserControl, IMainEditor
         FieldsLoaded = true;
         LegalityChanged?.Invoke(Legality.Valid, EventArgs.Empty);
     }
+
+    private void UpdateSidebarInvalidStates()
+    {
+        TC_Editor.ClearInvalid();
+        if (!Legality.Parsed || HaX || Entity.Species == 0)
+            return;
+
+        foreach (var v in ValidatedControls)
+        {
+            var c = v.IsNotValid(Entity);
+            if (c is null)
+                continue;
+            if (!WinFormsUtil.TryFindFirstControlOfType<TabPage>(c, out var tab))
+                continue;
+            var name = MapHiddenToSidebar(tab!.Name);
+            if (name is not null)
+                TC_Editor.SetItemInvalid(name, true);
+        }
+
+        if (!Stats.Valid)
+            TC_Editor.SetItemInvalid("Stats", true);
+
+        var moves = Legality.Info.Moves;
+        for (int i = 0; i < moves.Length; i++)
+        {
+            if (moves[i].Valid)
+                continue;
+            TC_Editor.SetItemInvalid("Moves", true);
+            break;
+        }
+    }
+
+    private static string? MapHiddenToSidebar(string name) => name switch
+    {
+        "Hidden_Main" => "Main",
+        "Hidden_Met" => "Met",
+        "Hidden_Stats" => "Stats",
+        "Hidden_Moves" => "Moves",
+        "Hidden_Cosmetic" => "Cosmetic",
+        "Hidden_OTMisc" => "OTMisc",
+        _ => null,
+    };
 
     public void UpdateUnicode(IReadOnlyList<string> symbols)
     {

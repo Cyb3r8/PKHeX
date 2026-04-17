@@ -29,6 +29,7 @@ public partial class Main : Form
             AutoScaleMode = AutoScaleMode.Font;
         C_SAV.SetEditEnvironment(new SaveDataEditor<PictureBox>(FakeSaveFile.Default, PKME_Tabs));
         FormLoadAddEvents();
+        Application.Idle += RefreshModifiedIndicator;
 #if DEBUG // translation updater -- all controls are added at this point -- call translate now
         if (DevUtil.IsUpdatingTranslations)
         {
@@ -1132,11 +1133,30 @@ public partial class Main : Form
         UpdateHeroCardTypes(pk);
     }
 
+    private void RefreshModifiedIndicator(object? sender, EventArgs e)
+    {
+        if (IsDisposed)
+            return;
+        var sav = C_SAV?.SAV;
+        bool edited = sav is { State.Edited: true } && sav is not FakeSaveFile;
+        var text = edited ? "● Modified" : string.Empty;
+        if (SL_Modified.Text == text)
+            return;
+        SL_Modified.Text = text;
+        SL_Modified.ForeColor = edited ? Theming.Theme.Current.Warning : Theming.Theme.Current.TextMuted;
+    }
+
     private void UpdateHeroCardTypes(PKM pk)
     {
         if (pk.Species == 0)
         {
-            PN_HeroCard.SetTypes(Theming.Theme.Current.Accent);
+            PN_HeroCard.SetTypes(Theming.Theme.Current.Accent, empty: true);
+            return;
+        }
+
+        if (pk.IsEgg)
+        {
+            PN_HeroCard.SetTypes(Theming.Theme.Current.Surface2, isEgg: true);
             return;
         }
 

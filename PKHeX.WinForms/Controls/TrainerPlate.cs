@@ -7,7 +7,7 @@ using PKHeX.WinForms.Theming;
 
 namespace PKHeX.WinForms.Controls;
 
-public sealed class TrainerPlate : Panel
+public sealed class TrainerPlate : Panel, IThemedControl
 {
     private string _game = string.Empty;
     private string _ot = string.Empty;
@@ -25,12 +25,15 @@ public sealed class TrainerPlate : Panel
         DoubleBuffered = true;
         BackColor = Theme.Current.Surface1;
         Dock = DockStyle.Top;
-        Height = 32;
-        Theme.Changed += (_, _) =>
-        {
-            BackColor = Theme.Current.Surface1;
-            Invalidate();
-        };
+        Height = LogicalToDeviceUnits(32);
+        AccessibleRole = AccessibleRole.StatusBar;
+        AccessibleName = "Trainer info";
+    }
+
+    public void ApplyTheme(ThemePalette palette)
+    {
+        BackColor = palette.Surface1;
+        Invalidate();
     }
 
     public void SetSave(SaveFile? sav)
@@ -38,7 +41,9 @@ public sealed class TrainerPlate : Panel
         _hasSave = sav is not null;
         if (sav is null)
         {
-            Visible = false;
+            _game = _ot = _ids = _language = string.Empty;
+            AccessibleDescription = "No save loaded";
+            Invalidate();
             return;
         }
 
@@ -47,8 +52,8 @@ public sealed class TrainerPlate : Panel
         _ids = $"TID: {sav.DisplayTID}  SID: {sav.DisplaySID}";
         _language = ((LanguageID)sav.Language).ToString();
         _accent = GameAccentResolver.Resolve(sav.Version);
+        AccessibleDescription = $"{_game} · {_ot} · {_ids} · {_language}";
 
-        Visible = true;
         Invalidate();
     }
 
@@ -61,32 +66,41 @@ public sealed class TrainerPlate : Panel
         using var bg = new SolidBrush(palette.Surface1);
         g.FillRectangle(bg, ClientRectangle);
 
-        if (!_hasSave)
-            return;
-
-        int x = 12;
+        int x = LogicalToDeviceUnits(12);
         int centerY = Height / 2;
+
+        if (!_hasSave)
+        {
+            using var muted = new Font(Font, FontStyle.Italic);
+            TextRenderer.DrawText(g, "No save loaded · Open a file to begin", muted,
+                new Rectangle(x, 0, Width - x, Height), palette.TextMuted,
+                TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding);
+            using var divider = new Pen(palette.Border, 1f);
+            g.DrawLine(divider, 0, Height - 1, Width, Height - 1);
+            return;
+        }
 
         using var badgeFont = new Font(Font.FontFamily, 8f, FontStyle.Bold);
         var badgeTextSize = TextRenderer.MeasureText(g, _game, badgeFont);
-        var badge = new Rectangle(x, centerY - 10, badgeTextSize.Width + 14, 20);
+        var badge = new Rectangle(x, centerY - LogicalToDeviceUnits(10), badgeTextSize.Width + LogicalToDeviceUnits(14), LogicalToDeviceUnits(20));
         using (var path = Pill(badge))
         using (var brush = new SolidBrush(_accent))
             g.FillPath(brush, path);
         TextRenderer.DrawText(g, _game, badgeFont, badge, Color.White,
             TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding);
-        x = badge.Right + 10;
+        x = badge.Right + LogicalToDeviceUnits(10);
 
         using var otFont = new Font(Font.FontFamily, 9f, FontStyle.Bold);
-        x = DrawLine(g, _ot, otFont, x, centerY, palette.TextPrimary) + 8;
+        x = DrawLine(g, _ot, otFont, x, centerY, palette.TextPrimary) + LogicalToDeviceUnits(8);
 
+        int dotSize = LogicalToDeviceUnits(3);
         using var dot = new SolidBrush(palette.TextMuted);
-        g.FillEllipse(dot, x, centerY - 2, 3, 3);
-        x += 10;
+        g.FillEllipse(dot, x, centerY - (dotSize / 2), dotSize, dotSize);
+        x += LogicalToDeviceUnits(10);
 
-        x = DrawLine(g, _ids, Font, x, centerY, palette.TextMuted) + 8;
-        g.FillEllipse(dot, x, centerY - 2, 3, 3);
-        x += 10;
+        x = DrawLine(g, _ids, Font, x, centerY, palette.TextMuted) + LogicalToDeviceUnits(8);
+        g.FillEllipse(dot, x, centerY - (dotSize / 2), dotSize, dotSize);
+        x += LogicalToDeviceUnits(10);
 
         DrawLine(g, _language, Font, x, centerY, palette.TextMuted);
 

@@ -5,7 +5,7 @@ using PKHeX.WinForms.Theming;
 
 namespace PKHeX.WinForms.Controls;
 
-public class VerticalTabControl : TabControl
+public class VerticalTabControl : TabControl, IThemedControl
 {
     private int _hoverIndex = -1;
 
@@ -17,24 +17,23 @@ public class VerticalTabControl : TabControl
         DoubleBuffered = true;
     }
 
+    public void ApplyTheme(ThemePalette palette)
+    {
+        BackColor = palette.Surface0;
+        ForeColor = palette.TextPrimary;
+        foreach (TabPage tp in TabPages)
+        {
+            tp.UseVisualStyleBackColor = false;
+            tp.BackColor = palette.Surface0;
+            tp.ForeColor = palette.TextPrimary;
+        }
+        Invalidate();
+    }
+
     protected override void OnHandleCreated(EventArgs e)
     {
         base.OnHandleCreated(e);
-        Theme.Changed += OnThemeChanged;
-        BackColor = Theme.Current.Surface0;
-    }
-
-    protected override void Dispose(bool disposing)
-    {
-        if (disposing)
-            Theme.Changed -= OnThemeChanged;
-        base.Dispose(disposing);
-    }
-
-    private void OnThemeChanged(object? sender, EventArgs e)
-    {
-        BackColor = Theme.Current.Surface0;
-        Invalidate();
+        ApplyTheme(Theme.Current);
     }
 
     protected override void OnMouseMove(MouseEventArgs e)
@@ -80,7 +79,7 @@ public class VerticalTabControl : TabControl
         bool hover = _hoverIndex == index;
 
         Color fill = selected ? p.Surface2
-            : hover ? p.Mix(p.Surface0, p.Surface2, 0.55f)
+            : hover ? p.HoverSurface
             : p.Surface0;
 
         using (var bg = new SolidBrush(fill))

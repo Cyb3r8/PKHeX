@@ -20,6 +20,11 @@ public sealed record ThemePalette
     public required Color Invalid { get; init; }
     public required Color Info { get; init; }
 
+    public Color HoverSurface => Mix(Surface0, Surface2, 0.55f);
+    public Color PressedSurface => Mix(Accent, Surface0, 0.85f);
+    public Color FocusRing => Accent;
+    public Color AccentMuted => Mix(Accent, Surface0, 0.70f);
+
     public static ThemePalette CreateLight(Color accent) => new()
     {
         IsDark = false,

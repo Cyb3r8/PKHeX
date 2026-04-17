@@ -7,7 +7,7 @@ using PKHeX.WinForms.Theming;
 
 namespace PKHeX.WinForms.Controls;
 
-public sealed class AccentStatusChip : Control
+public sealed class AccentStatusChip : Control, IThemedControl
 {
     public enum ChipStatus { Unknown, Legal, Warning, Invalid }
 
@@ -22,6 +22,7 @@ public sealed class AccentStatusChip : Control
             if (_status == value)
                 return;
             _status = value;
+            AccessibleName = $"Legality: {GetLabel()}";
             Invalidate();
         }
     }
@@ -39,14 +40,33 @@ public sealed class AccentStatusChip : Control
                  | ControlStyles.SupportsTransparentBackColor
                  | ControlStyles.ResizeRedraw, true);
         BackColor = Color.Transparent;
-        Size = new Size(88, 24);
+        Size = new Size(LogicalToDeviceUnits(88), LogicalToDeviceUnits(24));
         Font = new Font("Segoe UI", 8.25f, FontStyle.Bold);
         Cursor = Cursors.Hand;
-        Theme.Changed += (_, _) => Invalidate();
+        TabStop = true;
+        AccessibleRole = AccessibleRole.PushButton;
+        AccessibleName = $"Legality: {GetLabel()}";
     }
+
+    public void ApplyTheme(ThemePalette palette) => Invalidate();
 
     public void SetFromLegality(bool isValid)
         => Status = isValid ? ChipStatus.Legal : ChipStatus.Invalid;
+
+    protected override bool IsInputKey(Keys keyData) => keyData is Keys.Space or Keys.Enter;
+
+    protected override void OnKeyDown(KeyEventArgs e)
+    {
+        base.OnKeyDown(e);
+        if (e.KeyCode is Keys.Space or Keys.Enter)
+        {
+            OnClick(EventArgs.Empty);
+            e.Handled = true;
+        }
+    }
+
+    protected override void OnGotFocus(EventArgs e) { base.OnGotFocus(e); Invalidate(); }
+    protected override void OnLostFocus(EventArgs e) { base.OnLostFocus(e); Invalidate(); }
 
     protected override void OnPaint(PaintEventArgs e)
     {
@@ -57,7 +77,8 @@ public sealed class AccentStatusChip : Control
         var g = e.Graphics;
         g.SmoothingMode = SmoothingMode.AntiAlias;
 
-        var (fill, text) = GetColors(Theme.Current);
+        var palette = Theme.Current;
+        var (fill, text) = GetColors(palette);
 
         using (var halo = new GraphicsPath())
         {
@@ -73,6 +94,12 @@ public sealed class AccentStatusChip : Control
             AddPill(pill, inner, inner.Height / 2);
             using var brush = new SolidBrush(fill);
             g.FillPath(brush, pill);
+
+            if (_status == ChipStatus.Unknown)
+            {
+                using var dashed = new Pen(palette.Border, 1f) { DashStyle = DashStyle.Dash };
+                g.DrawPath(dashed, pill);
+            }
         }
 
         bool compact = inner.Width < 48;
@@ -82,12 +109,20 @@ public sealed class AccentStatusChip : Control
             : new Rectangle(inner.Left + 4, inner.Top + 3, glyphSide, glyphSide);
         DrawGlyph(g, glyph, text);
 
-        if (compact)
-            return;
+        if (!compact)
+        {
+            var textBounds = new Rectangle(glyph.Right + 4, inner.Top, inner.Right - glyph.Right - 8, inner.Height);
+            TextRenderer.DrawText(g, GetLabel(), Font, textBounds, text,
+                TextFormatFlags.VerticalCenter | TextFormatFlags.Left | TextFormatFlags.EndEllipsis);
+        }
 
-        var textBounds = new Rectangle(glyph.Right + 4, inner.Top, inner.Right - glyph.Right - 8, inner.Height);
-        TextRenderer.DrawText(g, GetLabel(), Font, textBounds, text,
-            TextFormatFlags.VerticalCenter | TextFormatFlags.Left | TextFormatFlags.EndEllipsis);
+        if (Focused)
+        {
+            using var ring = new GraphicsPath();
+            AddPill(ring, Rectangle.Inflate(r, -1, -1), (r.Height - 2) / 2);
+            using var pen = new Pen(palette.FocusRing, 1f) { DashStyle = DashStyle.Dot };
+            g.DrawPath(pen, ring);
+        }
     }
 
     private (Color Fill, Color Text) GetColors(ThemePalette p) => _status switch
@@ -128,6 +163,13 @@ public sealed class AccentStatusChip : Control
             case ChipStatus.Invalid:
                 g.DrawLine(pen, r.Left + 2, r.Top + 2, r.Right - 2, r.Bottom - 2);
                 g.DrawLine(pen, r.Right - 2, r.Top + 2, r.Left + 2, r.Bottom - 2);
+                break;
+            case ChipStatus.Unknown:
+                int qx = r.Left + (r.Width / 2);
+                int qy = r.Top + (r.Height / 2);
+                using (var dot = new SolidBrush(color))
+                    g.FillEllipse(dot, qx - 1, qy - 1, 2, 2);
+                g.DrawArc(pen, qx - 4, qy - 7, 8, 8, 180, 270);
                 break;
         }
     }

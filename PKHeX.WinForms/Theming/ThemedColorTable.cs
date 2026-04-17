@@ -18,9 +18,9 @@ internal sealed class ThemedColorTable : ProfessionalColorTable
     public override Color MenuItemSelectedGradientEnd => P.Surface2;
     public override Color MenuItemBorder => P.Surface2;
 
-    public override Color MenuItemPressedGradientBegin => Mix(P.Accent, P.Surface0, 0.85f);
-    public override Color MenuItemPressedGradientMiddle => Mix(P.Accent, P.Surface0, 0.85f);
-    public override Color MenuItemPressedGradientEnd => Mix(P.Accent, P.Surface0, 0.85f);
+    public override Color MenuItemPressedGradientBegin => P.PressedSurface;
+    public override Color MenuItemPressedGradientMiddle => P.PressedSurface;
+    public override Color MenuItemPressedGradientEnd => P.PressedSurface;
 
     public override Color MenuBorder => P.Border;
     public override Color ToolStripBorder => P.Border;
@@ -37,7 +37,7 @@ internal sealed class ThemedColorTable : ProfessionalColorTable
     public override Color ToolStripDropDownBackground => P.Surface1;
     public override Color ButtonSelectedHighlight => P.Accent;
     public override Color ButtonSelectedBorder => P.Accent;
-    public override Color CheckBackground => Mix(P.Accent, P.Surface0, 0.7f);
+    public override Color CheckBackground => P.AccentMuted;
     public override Color CheckSelectedBackground => P.Accent;
     public override Color CheckPressedBackground => P.Accent;
 
@@ -49,6 +49,4 @@ internal sealed class ThemedColorTable : ProfessionalColorTable
 
     public override Color StatusStripGradientBegin => P.Surface1;
     public override Color StatusStripGradientEnd => P.Surface1;
-
-    private static Color Mix(Color a, Color b, float t) => Theme.Current.Mix(a, b, t);
 }

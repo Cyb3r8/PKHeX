@@ -6,10 +6,12 @@ using PKHeX.WinForms.Theming;
 
 namespace PKHeX.WinForms.Controls;
 
-public sealed class HeroDragoutCard : Panel
+public sealed class HeroDragoutCard : Panel, IThemedControl
 {
     private Color _primary = Color.FromArgb(40, 120, 220);
     private Color _secondary = Color.Empty;
+    private bool _isEgg;
+    private bool _empty = true;
 
     public int CornerRadius { get; set; } = 8;
 
@@ -22,13 +24,18 @@ public sealed class HeroDragoutCard : Panel
                  | ControlStyles.SupportsTransparentBackColor, true);
         DoubleBuffered = true;
         BackColor = Color.Transparent;
-        Theme.Changed += (_, _) => Invalidate();
+        AccessibleRole = AccessibleRole.Pane;
+        AccessibleName = "Preview";
     }
 
-    public void SetTypes(Color primary, Color? secondary = null)
+    public void ApplyTheme(ThemePalette palette) => Invalidate();
+
+    public void SetTypes(Color primary, Color? secondary = null, bool isEgg = false, bool empty = false)
     {
         _primary = primary;
         _secondary = secondary ?? Color.Empty;
+        _isEgg = isEgg;
+        _empty = empty;
         Invalidate();
     }
 
@@ -43,29 +50,64 @@ public sealed class HeroDragoutCard : Panel
         g.SmoothingMode = SmoothingMode.AntiAlias;
         var palette = Theme.Current;
 
-        using var path = CreateRounded(r, CornerRadius);
+        using var path = CreateRounded(r, LogicalToDeviceUnits(CornerRadius));
 
         using (var surface = new SolidBrush(palette.Surface1))
             g.FillPath(surface, path);
 
-        var tintAlpha = palette.IsDark ? 80 : 55;
-        var a = Color.FromArgb(tintAlpha, _primary);
-        var b = _secondary.IsEmpty
-            ? Color.FromArgb(0, _primary)
-            : Color.FromArgb(tintAlpha, _secondary);
-
-        using (var tint = new LinearGradientBrush(r, a, b, 45f))
+        if (!_empty)
         {
+            var a = GetTintA(palette);
+            var b = GetTintB(palette, a);
+            using var tint = new LinearGradientBrush(r, a, b, 45f);
             var clip = g.Clip;
             g.SetClip(path);
             g.FillRectangle(tint, r);
             g.Clip = clip;
+
+            if (!_isEgg)
+                DrawTypeCorner(g, r, palette);
         }
 
         using var pen = new Pen(palette.Border, 1f);
         g.DrawPath(pen, path);
 
         base.OnPaint(e);
+    }
+
+    private Color GetTintA(ThemePalette palette)
+    {
+        int alpha = palette.IsDark ? 80 : 55;
+        if (_isEgg)
+            return Color.FromArgb(alpha, palette.Surface2);
+        return Color.FromArgb(alpha, _primary);
+    }
+
+    private Color GetTintB(ThemePalette palette, Color a)
+    {
+        int alpha = palette.IsDark ? 80 : 55;
+        if (_isEgg)
+            return Color.FromArgb(0, palette.Surface2);
+        if (_secondary.IsEmpty)
+            return Color.FromArgb(0, _primary);
+        return Color.FromArgb(alpha, _secondary);
+    }
+
+    private void DrawTypeCorner(Graphics g, Rectangle r, ThemePalette palette)
+    {
+        int chip = LogicalToDeviceUnits(10);
+        int margin = LogicalToDeviceUnits(4);
+        var corner = new Rectangle(r.Right - chip - margin, r.Top + margin, chip, chip);
+        using (var brush = new SolidBrush(_primary))
+            g.FillEllipse(brush, corner);
+        if (!_secondary.IsEmpty)
+        {
+            var second = new Rectangle(corner.X - chip + (chip / 3), corner.Y + (chip / 3), chip, chip);
+            using var brush = new SolidBrush(_secondary);
+            g.FillEllipse(brush, second);
+        }
+        using var ring = new Pen(palette.Border, 1f);
+        g.DrawEllipse(ring, corner);
     }
 
     private static GraphicsPath CreateRounded(Rectangle r, int radius)

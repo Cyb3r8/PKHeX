@@ -1,6 +1,5 @@
 using System.Drawing;
 using System.Windows.Forms;
-using PKHeX.WinForms.Controls;
 
 namespace PKHeX.WinForms.Theming;
 
@@ -25,6 +24,14 @@ internal static class ThemeWalker
     {
         if (c.Tag is string tag && tag.Contains(OptOutTag))
             return;
+
+        if (c is IThemedControl themed)
+        {
+            themed.ApplyTheme(p);
+            if (c.ContextMenuStrip is { } selfCtx)
+                StyleContextMenuStrip(selfCtx, p);
+            return;
+        }
 
         switch (c)
         {
@@ -52,18 +59,6 @@ internal static class ThemeWalker
                     StyleMenuItem(i, p);
                 break;
 
-            case VerticalTabControl vtc:
-                vtc.BackColor = p.Surface0;
-                vtc.ForeColor = p.TextPrimary;
-                foreach (TabPage tp in vtc.TabPages)
-                {
-                    tp.UseVisualStyleBackColor = false;
-                    tp.BackColor = p.Surface0;
-                    tp.ForeColor = p.TextPrimary;
-                }
-                vtc.Invalidate();
-                break;
-
             case TabControl tc:
                 tc.BackColor = p.Surface1;
                 tc.ForeColor = p.TextPrimary;
@@ -85,7 +80,7 @@ internal static class ThemeWalker
                 btn.FlatAppearance.BorderColor = p.Border;
                 btn.FlatAppearance.BorderSize = 1;
                 btn.FlatAppearance.MouseOverBackColor = p.Surface2;
-                btn.FlatAppearance.MouseDownBackColor = p.Mix(p.Accent, p.Surface0, 0.85f);
+                btn.FlatAppearance.MouseDownBackColor = p.PressedSurface;
                 btn.BackColor = p.Surface1;
                 btn.ForeColor = p.TextPrimary;
                 btn.UseVisualStyleBackColor = false;
