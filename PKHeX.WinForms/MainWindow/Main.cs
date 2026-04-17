@@ -29,6 +29,7 @@ public partial class Main : Form
             AutoScaleMode = AutoScaleMode.Font;
         C_SAV.SetEditEnvironment(new SaveDataEditor<PictureBox>(FakeSaveFile.Default, PKME_Tabs));
         FormLoadAddEvents();
+        Application.Idle += RefreshModifiedIndicator;
 #if DEBUG // translation updater -- all controls are added at this point -- call translate now
         if (DevUtil.IsUpdatingTranslations)
         {
@@ -726,6 +727,12 @@ public partial class Main : Form
         if (!SanityCheckSAV(ref sav))
             return true;
 
+        Theming.Theme.OnSaveFileLoaded(sav);
+        trainerPlate.SetSave(sav);
+        SL_SavePath.Text = string.IsNullOrWhiteSpace(path) ? "In-memory save" : path;
+        SL_Version.Text = sav.Version.ToString();
+        SL_Language.Text = ((LanguageID)sav.Language).ToString();
+
         if (C_SAV.SAV.State.Edited && Settings.SlotWrite.ModifyUnset)
         {
             var prompt = WinFormsUtil.Prompt(MessageBoxButtons.YesNo, MsgProgramCloseUnsaved, MsgProgramSaveFileConfirm);
@@ -1122,6 +1129,43 @@ public partial class Main : Form
         pb.Image = pk.Sprite(C_SAV.SAV);
         if (pb.BackColor == SlotUtil.BadDataColor)
             pb.BackColor = SlotUtil.GoodDataColor;
+
+        UpdateHeroCardTypes(pk);
+    }
+
+    private void RefreshModifiedIndicator(object? sender, EventArgs e)
+    {
+        if (IsDisposed)
+            return;
+        var sav = C_SAV?.SAV;
+        bool edited = sav is { State.Edited: true } && sav is not FakeSaveFile;
+        var text = edited ? "● Modified" : string.Empty;
+        if (SL_Modified.Text == text)
+            return;
+        SL_Modified.Text = text;
+        SL_Modified.ForeColor = edited ? Theming.Theme.Current.Warning : Theming.Theme.Current.TextMuted;
+    }
+
+    private void UpdateHeroCardTypes(PKM pk)
+    {
+        if (pk.Species == 0)
+        {
+            PN_HeroCard.SetTypes(Theming.Theme.Current.Accent, empty: true);
+            return;
+        }
+
+        if (pk.IsEgg)
+        {
+            PN_HeroCard.SetTypes(Theming.Theme.Current.Surface2, isEgg: true);
+            return;
+        }
+
+        var info = pk.PersonalInfo;
+        var primary = TypeColor.GetTypeSpriteColor(info.Type1);
+        Color? secondary = info.Type2 != info.Type1
+            ? TypeColor.GetTypeSpriteColor(info.Type2)
+            : null;
+        PN_HeroCard.SetTypes(primary, secondary);
     }
 
     private void PKME_Tabs_UpdatePreviewSprite(object sender, EventArgs e) => GetPreview(dragout);
@@ -1136,7 +1180,7 @@ public partial class Main : Form
 
         PB_Legal.Visible = true;
         bool isValid = (sender as bool?) != false;
-        PB_Legal.Image = SpriteUtil.GetLegalIndicator(isValid);
+        PB_Legal.SetFromLegality(isValid);
         toolTip.SetToolTip(PB_Legal, isValid ? MsgLegalityHoverValid : MsgLegalityHoverInvalid);
     }
 

@@ -8,6 +8,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using PKHeX.Core;
+using PKHeX.WinForms.Theming;
 
 namespace PKHeX.WinForms;
 
@@ -30,6 +31,7 @@ public sealed class PKHeXSettings : IProgramSettings
     public SaveLanguageSettings SaveLanguage { get; set; } = new();
 
     // UI Tweaks
+    public ThemeSettings Theme { get; set; } = new();
     public DisplaySettings Display { get; set; } = new();
     public SpriteSettings Sprite { get; set; } = new();
     public SoundSettings Sounds { get; set; } = new();

@@ -934,7 +934,7 @@ public sealed class MiscVerifier : Verifier
         if (enc.Generation < 8)
             return false;
         if (enc.Context is EntityContext.Gen9a)
-            return true;
+            return false; // Z-A stores size via Scale only; H/W are 0 natively, don't flag fishy
         if (enc is WC8 { IsHOMEGift: true })
             return false;
         if (enc is WC9) // fixed values (usually 0 or 128)

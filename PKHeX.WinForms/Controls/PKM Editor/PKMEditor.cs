@@ -24,6 +24,7 @@ public sealed partial class PKMEditor : UserControl, IMainEditor
     public PKMEditor()
     {
         InitializeComponent();
+        InitializeSidebar();
 
         var font = FontUtil.GetPKXFont();
         TB_Nickname.Font = TB_OT.Font = TB_HT.Font = font;
@@ -78,23 +79,16 @@ public sealed partial class PKMEditor : UserControl, IMainEditor
         TB_EXP.MouseWheel += WinFormsUtil.MouseWheelIncrement1;
         TB_Level.MouseWheel += WinFormsUtil.MouseWheelIncrement1;
         TB_Friendship.MouseWheel += WinFormsUtil.MouseWheelIncrement1;
+    }
 
-        Load += (_, _) =>
-        {
-            if (DesignMode || !Program.Settings.Startup.DarkMode)
-                return;
-
-            var darkBg = Color.FromArgb(30, 30, 30);
-            BackColor = Hidden_TC.BackColor = TC_Editor.BackColor = darkBg;
-            TC_Editor.ForeColor = Color.FromArgb(241, 241, 241);
-
-            foreach (TabPage page in Hidden_TC.TabPages)
-            {
-                page.UseVisualStyleBackColor = false;
-                page.BackColor = darkBg;
-                page.ForeColor = Color.FromArgb(241, 241, 241);
-            }
-        };
+    private void InitializeSidebar()
+    {
+        TC_Editor.AddItem("Main",     "Main",     ContestColor.Cool);
+        TC_Editor.AddItem("Met",      "Met",      ContestColor.Beauty);
+        TC_Editor.AddItem("Stats",    "Stats",    ContestColor.Cute);
+        TC_Editor.AddItem("Moves",    "Moves",    ContestColor.Clever);
+        TC_Editor.AddItem("Cosmetic", "Cosmetic", ContestColor.Tough);
+        TC_Editor.AddItem("OTMisc",   "OT/Misc",  Color.RosyBrown);
     }
 
     private void ClickManualAbility(object sender, EventArgs e)
@@ -382,6 +376,7 @@ public sealed partial class PKMEditor : UserControl, IMainEditor
         {
             MC_Move1.HideLegality = MC_Move2.HideLegality = MC_Move3.HideLegality = MC_Move4.HideLegality = true;
             PB_WarnRelearn1.Visible = PB_WarnRelearn2.Visible = PB_WarnRelearn3.Visible = PB_WarnRelearn4.Visible = false;
+            TC_Editor.ClearInvalid();
             LegalityChanged?.Invoke(Legality.Valid, EventArgs.Empty);
             return;
         }
@@ -401,6 +396,8 @@ public sealed partial class PKMEditor : UserControl, IMainEditor
                 relearnPB[i].Image = MoveDisplayState.GetMoveImage(!relearn[i].Valid, Entity, i);
         }
 
+        UpdateSidebarInvalidStates();
+
         if (args.HasFlag(UpdateLegalityArgs.SkipMoveRepopulation))
             return;
         // Resort moves
@@ -409,6 +406,48 @@ public sealed partial class PKMEditor : UserControl, IMainEditor
         FieldsLoaded = true;
         LegalityChanged?.Invoke(Legality.Valid, EventArgs.Empty);
     }
+
+    private void UpdateSidebarInvalidStates()
+    {
+        TC_Editor.ClearInvalid();
+        if (!Legality.Parsed || HaX || Entity.Species == 0)
+            return;
+
+        foreach (var v in ValidatedControls)
+        {
+            var c = v.IsNotValid(Entity);
+            if (c is null)
+                continue;
+            if (!WinFormsUtil.TryFindFirstControlOfType<TabPage>(c, out var tab))
+                continue;
+            var name = MapHiddenToSidebar(tab!.Name);
+            if (name is not null)
+                TC_Editor.SetItemInvalid(name, true);
+        }
+
+        if (!Stats.Valid)
+            TC_Editor.SetItemInvalid("Stats", true);
+
+        var moves = Legality.Info.Moves;
+        for (int i = 0; i < moves.Length; i++)
+        {
+            if (moves[i].Valid)
+                continue;
+            TC_Editor.SetItemInvalid("Moves", true);
+            break;
+        }
+    }
+
+    private static string? MapHiddenToSidebar(string name) => name switch
+    {
+        "Hidden_Main" => "Main",
+        "Hidden_Met" => "Met",
+        "Hidden_Stats" => "Stats",
+        "Hidden_Moves" => "Moves",
+        "Hidden_Cosmetic" => "Cosmetic",
+        "Hidden_OTMisc" => "OTMisc",
+        _ => null,
+    };
 
     public void UpdateUnicode(IReadOnlyList<string> symbols)
     {
@@ -2098,24 +2137,24 @@ public sealed partial class PKMEditor : UserControl, IMainEditor
         if (Entity.Format == 1 && Hidden_TC.TabPages.Contains(Hidden_Met))
         {
             Hidden_TC.TabPages.Remove(Hidden_Met);
-            TC_Editor.TabPages.Remove(Tab_Met);
+            TC_Editor.RemoveItem("Met");
         }
         else if (Entity.Format != 1 && !Hidden_TC.TabPages.Contains(Hidden_Met))
         {
             Hidden_TC.TabPages.Insert(1, Hidden_Met);
-            TC_Editor.TabPages.Insert(1, Tab_Met);
+            TC_Editor.InsertItem(1, "Met", "Met", ContestColor.Beauty);
             isTranslationRequired = true;
         }
 
         if (Entity.Format <= 2 && Hidden_TC.TabPages.Contains(Hidden_Cosmetic))
         {
             Hidden_TC.TabPages.Remove(Hidden_Cosmetic);
-            TC_Editor.TabPages.Remove(Tab_Cosmetic);
+            TC_Editor.RemoveItem("Cosmetic");
         }
         else if (Entity.Format > 2 && !Hidden_TC.TabPages.Contains(Hidden_Cosmetic))
         {
             Hidden_TC.TabPages.Insert(4, Hidden_Cosmetic);
-            TC_Editor.TabPages.Insert(4, Tab_Cosmetic);
+            TC_Editor.InsertItem(4, "Cosmetic", "Cosmetic", ContestColor.Tough);
             isTranslationRequired = true;
         }
 
@@ -2193,7 +2232,7 @@ public sealed partial class PKMEditor : UserControl, IMainEditor
 
     private void ClickVersionMarking(object sender, EventArgs e)
     {
-        TC_Editor.SelectedTab = Tab_Met;
+        TC_Editor.SelectByName("Met");
         if (sender == PB_BattleVersion)
             CB_BattleVersion.DroppedDown = true;
         else
@@ -2211,8 +2250,8 @@ public sealed partial class PKMEditor : UserControl, IMainEditor
 
     public void FlickerInterface()
     {
-        TC_Editor.SelectedTab = Tab_Met; // parent tab of CB_GameOrigin
-        TC_Editor.SelectedTab = Tab_Main; // first tab
+        TC_Editor.SelectByName("Met"); // parent of CB_GameOrigin
+        TC_Editor.SelectByName("Main");
     }
 
     private void L_Obedience_Click(object sender, EventArgs e)
@@ -2358,11 +2397,11 @@ public sealed partial class PKMEditor : UserControl, IMainEditor
     {
         if (Entity.Format <= 2)
         {
-            TC_Editor.SelectedTab = Tab_Stats;
+            TC_Editor.SelectByName("Stats");
             Stats.Focus();
             return;
         }
-        TC_Editor.SelectedTab = Tab_Main;
+        TC_Editor.SelectByName("Main");
         TB_PID.Focus();
     }
 
@@ -2379,7 +2418,7 @@ public sealed partial class PKMEditor : UserControl, IMainEditor
         {
             CHK_Cured.Checked = false;
         }
-        TC_Editor.SelectedTab = Tab_Main;
+        TC_Editor.SelectByName("Main");
         CB_PKRSStrain.DroppedDown = true;
     }
 }

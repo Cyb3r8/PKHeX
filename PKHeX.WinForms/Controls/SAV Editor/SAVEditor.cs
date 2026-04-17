@@ -82,17 +82,6 @@ public partial class SAVEditor : UserControl, ISlotViewer<PictureBox>, ISaveFile
         menu = new ContextMenuSAV { Manager = M };
         InitializeEvents();
 
-        if (!DesignMode && Program.Settings.Startup.DarkMode)
-        {
-            var darkBg = Color.FromArgb(30, 30, 30);
-            tabBoxMulti.BackColor = darkBg;
-            foreach (TabPage page in tabBoxMulti.TabPages)
-            {
-                page.UseVisualStyleBackColor = false;
-                page.BackColor = darkBg;
-                page.ForeColor = Color.FromArgb(241, 241, 241);
-            }
-        }
     }
 
     private void InitializeEvents()

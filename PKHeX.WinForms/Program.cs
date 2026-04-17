@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using PKHeX.Core;
+using PKHeX.WinForms.Theming;
 
 #if !DEBUG
 using System.Diagnostics.CodeAnalysis;
@@ -45,10 +46,7 @@ internal static class Program
         Application.SetCompatibleTextRenderingDefault(false);
         Settings = PKHeXSettings.GetSettings(PathConfig);
 
-        if (Settings.Startup.DarkMode)
-#pragma warning disable WFO5001
-            Application.SetColorMode(SystemColorMode.Dark);
-#pragma warning restore WFO5001
+        Theme.Initialize(Settings);
     }
 
     [STAThread]

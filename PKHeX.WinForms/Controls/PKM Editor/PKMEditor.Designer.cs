@@ -265,13 +265,7 @@ namespace PKHeX.WinForms.Controls
             L_ArrivedDateTime = new System.Windows.Forms.Label();
             CAL_ReceivedDateTime = new System.Windows.Forms.DateTimePicker();
             StatusView = new StatusConditionView();
-            TC_Editor = new VerticalTabControlEntityEditor();
-            Tab_Main = new System.Windows.Forms.TabPage();
-            Tab_Met = new System.Windows.Forms.TabPage();
-            Tab_Stats = new System.Windows.Forms.TabPage();
-            Tab_Moves = new System.Windows.Forms.TabPage();
-            Tab_Cosmetic = new System.Windows.Forms.TabPage();
-            Tab_OTMisc = new System.Windows.Forms.TabPage();
+            TC_Editor = new EditorSidebar();
             B_PlusRecord = new System.Windows.Forms.Button();
             Hidden_TC.SuspendLayout();
             Hidden_Main.SuspendLayout();
@@ -377,7 +371,6 @@ namespace PKHeX.WinForms.Controls
             FLP_HomeTracker.SuspendLayout();
             FLP_EncryptionConstant.SuspendLayout();
             FLP_ReceivedDate.SuspendLayout();
-            TC_Editor.SuspendLayout();
             SuspendLayout();
             // 
             // Hidden_TC
@@ -3301,87 +3294,16 @@ namespace PKHeX.WinForms.Controls
             StatusView.Name = "StatusView";
             StatusView.Size = new System.Drawing.Size(64, 64);
             StatusView.TabIndex = 2;
-            // 
+            //
             // TC_Editor
-            // 
-            TC_Editor.Alignment = System.Windows.Forms.TabAlignment.Right;
-            TC_Editor.Controls.Add(Tab_Main);
-            TC_Editor.Controls.Add(Tab_Met);
-            TC_Editor.Controls.Add(Tab_Stats);
-            TC_Editor.Controls.Add(Tab_Moves);
-            TC_Editor.Controls.Add(Tab_Cosmetic);
-            TC_Editor.Controls.Add(Tab_OTMisc);
-            TC_Editor.DrawMode = System.Windows.Forms.TabDrawMode.OwnerDrawFixed;
-            TC_Editor.ItemSize = new System.Drawing.Size(40, 96);
+            //
+            TC_Editor.ItemHeight = 40;
             TC_Editor.Location = new System.Drawing.Point(0, 56);
             TC_Editor.Margin = new System.Windows.Forms.Padding(0);
-            TC_Editor.Multiline = true;
             TC_Editor.Name = "TC_Editor";
-            TC_Editor.Padding = new System.Drawing.Point(0, 0);
-            TC_Editor.SelectedIndex = 0;
             TC_Editor.Size = new System.Drawing.Size(96, 320);
-            TC_Editor.SizeMode = System.Windows.Forms.TabSizeMode.Fixed;
             TC_Editor.TabIndex = 0;
             TC_Editor.SelectedIndexChanged += ChangeSelectedTabIndex;
-            // 
-            // Tab_Main
-            // 
-            Tab_Main.Location = new System.Drawing.Point(4, 4);
-            Tab_Main.Margin = new System.Windows.Forms.Padding(0);
-            Tab_Main.Name = "Tab_Main";
-            Tab_Main.Size = new System.Drawing.Size(0, 312);
-            Tab_Main.TabIndex = 0;
-            Tab_Main.Text = "Main";
-            Tab_Main.UseVisualStyleBackColor = true;
-            // 
-            // Tab_Met
-            // 
-            Tab_Met.Location = new System.Drawing.Point(4, 4);
-            Tab_Met.Margin = new System.Windows.Forms.Padding(0);
-            Tab_Met.Name = "Tab_Met";
-            Tab_Met.Size = new System.Drawing.Size(0, 312);
-            Tab_Met.TabIndex = 1;
-            Tab_Met.Text = "Met";
-            Tab_Met.UseVisualStyleBackColor = true;
-            // 
-            // Tab_Stats
-            // 
-            Tab_Stats.Location = new System.Drawing.Point(4, 4);
-            Tab_Stats.Margin = new System.Windows.Forms.Padding(0);
-            Tab_Stats.Name = "Tab_Stats";
-            Tab_Stats.Size = new System.Drawing.Size(0, 312);
-            Tab_Stats.TabIndex = 2;
-            Tab_Stats.Text = "Stats";
-            Tab_Stats.UseVisualStyleBackColor = true;
-            // 
-            // Tab_Moves
-            // 
-            Tab_Moves.Location = new System.Drawing.Point(4, 4);
-            Tab_Moves.Margin = new System.Windows.Forms.Padding(0);
-            Tab_Moves.Name = "Tab_Moves";
-            Tab_Moves.Size = new System.Drawing.Size(0, 312);
-            Tab_Moves.TabIndex = 3;
-            Tab_Moves.Text = "Moves";
-            Tab_Moves.UseVisualStyleBackColor = true;
-            // 
-            // Tab_Cosmetic
-            // 
-            Tab_Cosmetic.Location = new System.Drawing.Point(4, 4);
-            Tab_Cosmetic.Name = "Tab_Cosmetic";
-            Tab_Cosmetic.Size = new System.Drawing.Size(0, 312);
-            Tab_Cosmetic.TabIndex = 5;
-            Tab_Cosmetic.Text = "Cosmetic";
-            Tab_Cosmetic.UseVisualStyleBackColor = true;
-            // 
-            // Tab_OTMisc
-            // 
-            Tab_OTMisc.Location = new System.Drawing.Point(4, 4);
-            Tab_OTMisc.Margin = new System.Windows.Forms.Padding(0);
-            Tab_OTMisc.Name = "Tab_OTMisc";
-            Tab_OTMisc.Size = new System.Drawing.Size(0, 312);
-            Tab_OTMisc.TabIndex = 4;
-            Tab_OTMisc.Text = "OT/Misc";
-            Tab_OTMisc.UseVisualStyleBackColor = true;
             // 
             // B_PlusRecord
             // 
@@ -3542,7 +3464,6 @@ namespace PKHeX.WinForms.Controls
             FLP_EncryptionConstant.ResumeLayout(false);
             FLP_EncryptionConstant.PerformLayout();
             FLP_ReceivedDate.ResumeLayout(false);
-            TC_Editor.ResumeLayout(false);
             ResumeLayout(false);
         }
 
@@ -3730,14 +3651,8 @@ namespace PKHeX.WinForms.Controls
         private MoveChoice MC_Move2;
         private MoveChoice MC_Move3;
         private MoveChoice MC_Move4;
-        private PKHeX.WinForms.Controls.VerticalTabControlEntityEditor TC_Editor;
-        private System.Windows.Forms.TabPage Tab_Main;
-        private System.Windows.Forms.TabPage Tab_Met;
-        private System.Windows.Forms.TabPage Tab_Stats;
-        private System.Windows.Forms.TabPage Tab_Moves;
-        private System.Windows.Forms.TabPage Tab_OTMisc;
+        private PKHeX.WinForms.Controls.EditorSidebar TC_Editor;
         private System.Windows.Forms.TabPage Hidden_Cosmetic;
-        private System.Windows.Forms.TabPage Tab_Cosmetic;
         private System.Windows.Forms.FlowLayoutPanel FLP_CosmeticTop;
         private System.Windows.Forms.FlowLayoutPanel FLP_BigMarkings;
         private StatEditor Stats;

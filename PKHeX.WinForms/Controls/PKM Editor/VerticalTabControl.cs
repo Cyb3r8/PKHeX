@@ -1,21 +1,68 @@
-using System.ComponentModel;
+using System;
 using System.Drawing;
-using System.Drawing.Drawing2D;
 using System.Windows.Forms;
-using PKHeX.Drawing.PokeSprite;
+using PKHeX.WinForms.Theming;
 
 namespace PKHeX.WinForms.Controls;
 
-/// <summary>
-/// Aligns tabs to the left side of the control with text displayed horizontally.
-/// </summary>
-public class VerticalTabControl : TabControl
+public class VerticalTabControl : TabControl, IThemedControl
 {
+    private int _hoverIndex = -1;
+
     public VerticalTabControl()
     {
         Alignment = TabAlignment.Right;
         DrawMode = TabDrawMode.OwnerDrawFixed;
         SizeMode = TabSizeMode.Fixed;
+        DoubleBuffered = true;
+    }
+
+    public void ApplyTheme(ThemePalette palette)
+    {
+        BackColor = palette.Surface0;
+        ForeColor = palette.TextPrimary;
+        foreach (TabPage tp in TabPages)
+        {
+            tp.UseVisualStyleBackColor = false;
+            tp.BackColor = palette.Surface0;
+            tp.ForeColor = palette.TextPrimary;
+        }
+        Invalidate();
+    }
+
+    protected override void OnHandleCreated(EventArgs e)
+    {
+        base.OnHandleCreated(e);
+        ApplyTheme(Theme.Current);
+    }
+
+    protected override void OnMouseMove(MouseEventArgs e)
+    {
+        base.OnMouseMove(e);
+        int idx = HitTest(e.Location);
+        if (idx == _hoverIndex)
+            return;
+        _hoverIndex = idx;
+        Invalidate();
+    }
+
+    protected override void OnMouseLeave(EventArgs e)
+    {
+        base.OnMouseLeave(e);
+        if (_hoverIndex == -1)
+            return;
+        _hoverIndex = -1;
+        Invalidate();
+    }
+
+    private int HitTest(Point p)
+    {
+        for (int i = 0; i < TabPages.Count; i++)
+        {
+            if (GetTabRect(i).Contains(p))
+                return i;
+        }
+        return -1;
     }
 
     protected override void OnDrawItem(DrawItemEventArgs e)
@@ -23,31 +70,48 @@ public class VerticalTabControl : TabControl
         var index = e.Index;
         if ((uint)index >= TabPages.Count)
             return;
+
         var bounds = GetTabRect(index);
+        var p = Theme.Current;
+        var g = e.Graphics;
 
-        var graphics = e.Graphics;
-        DrawBackground(e, bounds, graphics);
+        bool selected = (e.State & DrawItemState.Selected) != 0;
+        bool hover = _hoverIndex == index;
 
-        using var flags = new StringFormat();
-        flags.Alignment = StringAlignment.Center;
-        flags.LineAlignment = StringAlignment.Center;
-        using var text = new SolidBrush(ForeColor);
-        var tab = TabPages[index];
-        graphics.DrawString(tab.Text, Font, text, bounds, flags);
-        base.OnDrawItem(e);
-    }
+        Color fill = selected ? p.Surface2
+            : hover ? p.HoverSurface
+            : p.Surface0;
 
-    protected static void DrawBackground(DrawItemEventArgs e, Rectangle bounds, Graphics graphics)
-    {
-        if (e.State != DrawItemState.Selected)
+        using (var bg = new SolidBrush(fill))
+            g.FillRectangle(bg, bounds);
+
+        if (selected)
         {
-            e.DrawBackground();
-            return;
+            using var accent = new SolidBrush(p.Accent);
+            g.FillRectangle(accent, new Rectangle(bounds.X, bounds.Y + 4, 3, bounds.Height - 8));
         }
 
-        var (c1, c2) = (SystemColors.ControlLightLight, SystemColors.ScrollBar);
-        using var brush = new LinearGradientBrush(bounds, c1, c2, 90f);
-        graphics.FillRectangle(brush, bounds);
+        var textRect = new Rectangle(bounds.X + 14, bounds.Y, bounds.Width - 18, bounds.Height);
+        using var flags = new StringFormat
+        {
+            Alignment = StringAlignment.Near,
+            LineAlignment = StringAlignment.Center,
+            Trimming = StringTrimming.EllipsisCharacter,
+            FormatFlags = StringFormatFlags.NoWrap,
+        };
+        using var textBrush = new SolidBrush(selected ? p.TextPrimary : p.TextMuted);
+        var text = TabPages[index].Text;
+        if (!selected)
+        {
+            g.DrawString(text, Font, textBrush, textRect, flags);
+        }
+        else
+        {
+            using var bold = new Font(Font, FontStyle.Bold);
+            g.DrawString(text, bold, textBrush, textRect, flags);
+        }
+
+        base.OnDrawItem(e);
     }
 
     protected override void ScaleControl(SizeF factor, BoundsSpecified specified)
@@ -55,78 +119,4 @@ public class VerticalTabControl : TabControl
         base.ScaleControl(factor, specified);
         ItemSize = new((int)(ItemSize.Width * factor.Width), (int)(ItemSize.Height * factor.Height));
     }
-}
-
-/// <summary>
-/// Specialized <see cref="VerticalTabControl"/> for displaying a <see cref="PKHeX.Core.PKM"/> editor tabs.
-/// </summary>
-public sealed class VerticalTabControlEntityEditor : VerticalTabControl
-{
-    /// <summary>
-    /// Tab stripe colors based on Contest Stats.
-    /// </summary>
-    private static readonly Color[] SelectedTags =
-    [
-        ContestColor.Cool, // Main
-        ContestColor.Beauty, // Met
-        ContestColor.Cute, // Stats
-        ContestColor.Clever, // Moves
-        ContestColor.Tough, // Cosmetic
-        Color.RosyBrown, // OT
-    ];
-
-    protected override void OnDrawItem(DrawItemEventArgs e)
-    {
-        var index = e.Index;
-        if ((uint)index >= TabPages.Count)
-            return;
-        var bounds = GetTabRect(index);
-
-        var graphics = e.Graphics;
-        DrawBackground(e, bounds, graphics);
-        if (e.State == DrawItemState.Selected)
-        {
-            Color c1 = Color.White;
-            Color c2 = Color.LightGray;
-
-            if (LicenseManager.UsageMode != LicenseUsageMode.Designtime)
-            {
-                try
-                {
-                    if (Main.Settings?.Draw is { } settings)
-                    {
-                        c1 = settings.VerticalSelectPrimary;
-                        c2 = settings.VerticalSelectSecondary;
-                    }
-
-                    if (IsDarkMode(BackColor))
-                    {
-                        if (c1.GetBrightness() > 0.6f) c1 = Color.FromArgb(62, 62, 66);
-                        if (c2.GetBrightness() > 0.6f) c2 = Color.FromArgb(45, 45, 48);
-                    }
-                }
-                catch { }
-            }
-
-            using var brush = new LinearGradientBrush(bounds, c1, c2, 90f);
-            graphics.FillRectangle(brush, bounds);
-
-            // draw colored pip on the left side of the tab
-            using var pipBrush = new SolidBrush(SelectedTags[index]);
-            var pip = GetTabRect(index) with { Width = bounds.Width / 8 };
-            graphics.FillRectangle(pipBrush, pip);
-
-            // shift text to the right to avoid pip overlap
-            bounds = bounds with { Width = bounds.Width - pip.Width, X = bounds.X + pip.Width };
-        }
-
-        using var flags = new StringFormat();
-        flags.Alignment = StringAlignment.Center;
-        flags.LineAlignment = StringAlignment.Center;
-        using var text = new SolidBrush(ForeColor);
-        var tab = TabPages[index];
-        graphics.DrawString(tab.Text, Font, text, bounds, flags);
-    }
-
-    private static bool IsDarkMode(Color backColor) => backColor.GetBrightness() < 0.5f;
 }

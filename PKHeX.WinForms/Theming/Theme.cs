@@ -1,0 +1,206 @@
+using System;
+using System.Runtime.CompilerServices;
+using System.Drawing;
+using System.Windows.Forms;
+using PKHeX.Core;
+
+namespace PKHeX.WinForms.Theming;
+
+public static class Theme
+{
+    private static ThemePalette _current = ThemePalette.CreateLight(GameAccentResolver.Default);
+    private static ThemeSettings _settings = new();
+    private static readonly ConditionalWeakTable<Form, object> _hooked = new();
+    private static readonly object _sentinel = new();
+
+    [ThreadStatic]
+    private static bool _applying;
+
+    public static ThemePalette Current => _current;
+    public static ThemeSettings Settings => _settings;
+
+    public static event EventHandler? Changed;
+
+    public static void Initialize(PKHeXSettings pkSettings)
+    {
+        _settings = pkSettings.Theme;
+
+        if (pkSettings.Startup.DarkMode && _settings.Mode == ThemeMode.System)
+        {
+            _settings.Mode = ThemeMode.Dark;
+            pkSettings.Startup.DarkMode = false;
+        }
+
+        ApplyColorMode();
+        RebuildPalette();
+
+        ToolStripManager.Renderer = new ThemedToolStripRenderer();
+
+        Application.Idle += OnIdleHookForms;
+    }
+
+    public static void SetMode(ThemeMode mode)
+    {
+        if (_settings.Mode == mode)
+            return;
+        _settings.Mode = mode;
+        ApplyColorMode();
+        RebuildPalette();
+        RaiseChanged();
+    }
+
+    public static void SetAccent(AccentSource source, Color custom)
+    {
+        _settings.AccentSource = source;
+        if (source == AccentSource.Custom)
+            _settings.AccentColor = custom;
+        RebuildPalette();
+        RaiseChanged();
+    }
+
+    public static void OnSaveFileLoaded(SaveFile? sav)
+    {
+        if (_settings.AccentSource != AccentSource.FromSave)
+            return;
+        var newAccent = GameAccentResolver.Resolve(sav);
+        if (newAccent.ToArgb() == _current.Accent.ToArgb())
+            return;
+        _current = _current.WithAccent(newAccent);
+        RaiseChanged();
+    }
+
+    public static void Apply(Control root)
+    {
+        if (_applying)
+            return;
+        _applying = true;
+        try
+        {
+            ThemeWalker.Apply(root, _current);
+        }
+        finally
+        {
+            _applying = false;
+        }
+    }
+
+    private static void ApplyColorMode()
+    {
+#pragma warning disable WFO5001
+        var mode = _settings.Mode switch
+        {
+            ThemeMode.Light => SystemColorMode.Classic,
+            ThemeMode.Dark => SystemColorMode.Dark,
+            _ => SystemColorMode.System,
+        };
+        Application.SetColorMode(mode);
+#pragma warning restore WFO5001
+    }
+
+    private static void RebuildPalette()
+    {
+        if (SystemInformation.HighContrast)
+        {
+            _current = HighContrastPalette();
+            return;
+        }
+
+        var accent = _settings.AccentSource switch
+        {
+            AccentSource.Custom => _settings.AccentColor,
+            AccentSource.FromSave => _current.Accent,
+            _ => GameAccentResolver.Default,
+        };
+
+        bool dark = _settings.Mode switch
+        {
+            ThemeMode.Dark => true,
+            ThemeMode.Light => false,
+            _ => SystemColors.Control.GetBrightness() < 0.5f,
+        };
+
+        _current = dark ? ThemePalette.CreateDark(accent) : ThemePalette.CreateLight(accent);
+    }
+
+    private static ThemePalette HighContrastPalette() => new()
+    {
+        IsDark = SystemColors.Window.GetBrightness() < 0.5f,
+        Surface0 = SystemColors.Control,
+        Surface1 = SystemColors.Window,
+        Surface2 = SystemColors.ControlLight,
+        Border = SystemColors.ControlDark,
+        TextPrimary = SystemColors.ControlText,
+        TextMuted = SystemColors.GrayText,
+        TextDisabled = SystemColors.GrayText,
+        Accent = SystemColors.Highlight,
+        AccentHover = SystemColors.HotTrack,
+        AccentText = SystemColors.HighlightText,
+        Legal = SystemColors.ControlText,
+        Warning = SystemColors.ControlText,
+        Invalid = SystemColors.ControlText,
+        Info = SystemColors.ControlText,
+    };
+
+    private static void RaiseChanged()
+    {
+        foreach (var kv in _hooked)
+        {
+            var f = kv.Key;
+            if (!f.IsDisposed)
+                Apply(f);
+        }
+        Changed?.Invoke(null, EventArgs.Empty);
+    }
+
+    private static void OnIdleHookForms(object? sender, EventArgs e)
+    {
+        // Application.OpenForms spans threads; skip forms on other UI threads.
+        foreach (Form f in Application.OpenForms)
+        {
+            if (f.IsDisposed || f.InvokeRequired)
+                continue;
+            if (!_hooked.TryAdd(f, _sentinel))
+                continue;
+            HookForm(f);
+        }
+    }
+
+    private static void HookForm(Form f)
+    {
+        try
+        {
+            if (f.IsHandleCreated)
+                Apply(f);
+            else
+                f.HandleCreated += OnFormHandleCreated;
+        }
+        catch
+        {
+        }
+
+        f.Disposed += OnFormDisposed;
+    }
+
+    private static void OnFormHandleCreated(object? sender, EventArgs e)
+    {
+        if (sender is not Form f)
+            return;
+        f.HandleCreated -= OnFormHandleCreated;
+        TryApply(f);
+    }
+
+    private static void OnFormDisposed(object? sender, EventArgs e)
+    {
+        if (sender is not Form f)
+            return;
+        f.Disposed -= OnFormDisposed;
+        f.HandleCreated -= OnFormHandleCreated;
+        _hooked.Remove(f);
+    }
+
+    private static void TryApply(Control c)
+    {
+        try { Apply(c); }
+        catch { }
+    }
+}
