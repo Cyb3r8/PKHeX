@@ -1,4 +1,7 @@
+using System;
 using System.Drawing;
+using System.Drawing.Drawing2D;
+using System.Runtime.CompilerServices;
 using System.Windows.Forms;
 
 namespace PKHeX.WinForms.Theming;
@@ -87,19 +90,11 @@ internal static class ThemeWalker
                 break;
 
             case CheckBox cb:
-                cb.BackColor = Color.Transparent;
-                cb.ForeColor = p.TextPrimary;
-                cb.FlatStyle = FlatStyle.Flat;
-                cb.FlatAppearance.BorderColor = p.Border;
-                cb.FlatAppearance.CheckedBackColor = p.Accent;
+                StyleCheckBox(cb, p);
                 break;
 
             case RadioButton rb:
-                rb.BackColor = Color.Transparent;
-                rb.ForeColor = p.TextPrimary;
-                rb.FlatStyle = FlatStyle.Flat;
-                rb.FlatAppearance.BorderColor = p.Border;
-                rb.FlatAppearance.CheckedBackColor = p.Accent;
+                StyleRadioButton(rb, p);
                 break;
 
             case LinkLabel ll:
@@ -255,6 +250,143 @@ internal static class ThemeWalker
         ctx.ForeColor = p.TextPrimary;
         foreach (ToolStripItem i in ctx.Items)
             StyleMenuItem(i, p);
+    }
+
+    private static Color ResolveParentBack(Control c, ThemePalette p)
+    {
+        for (var parent = c.Parent; parent is not null; parent = parent.Parent)
+        {
+            var bc = parent.BackColor;
+            if (bc.A != 0 && bc != Color.Transparent)
+                return bc;
+        }
+        return p.Surface0;
+    }
+
+    private static readonly ConditionalWeakTable<CheckBox, object> _themedCheckBoxes = new();
+    private static readonly ConditionalWeakTable<RadioButton, object> _themedRadioButtons = new();
+    private static readonly object _sentinel = new();
+
+    private static void StyleCheckBox(CheckBox cb, ThemePalette p)
+    {
+        cb.BackColor = ResolveParentBack(cb, p);
+        cb.ForeColor = p.TextPrimary;
+        cb.FlatStyle = FlatStyle.Flat;
+        cb.FlatAppearance.BorderColor = p.Border;
+        cb.FlatAppearance.CheckedBackColor = p.Accent;
+
+        // CheckBox.Appearance.Button can owner-theme correctly; Normal appearance has a Windows-drawn
+        // glyph that ignores palette colors. Hook a Paint override to draw a themed glyph.
+        if (cb.Appearance == Appearance.Normal && _themedCheckBoxes.TryAdd(cb, _sentinel))
+            cb.Paint += PaintThemedCheckBox;
+        cb.Invalidate();
+    }
+
+    private static void StyleRadioButton(RadioButton rb, ThemePalette p)
+    {
+        rb.BackColor = ResolveParentBack(rb, p);
+        rb.ForeColor = p.TextPrimary;
+        rb.FlatStyle = FlatStyle.Flat;
+        rb.FlatAppearance.BorderColor = p.Border;
+        rb.FlatAppearance.CheckedBackColor = p.Accent;
+
+        if (rb.Appearance == Appearance.Normal && _themedRadioButtons.TryAdd(rb, _sentinel))
+            rb.Paint += PaintThemedRadioButton;
+        rb.Invalidate();
+    }
+
+    private static void PaintThemedCheckBox(object? sender, PaintEventArgs e)
+    {
+        if (sender is not CheckBox cb)
+            return;
+        var pal = Theme.Current;
+
+        int size = (int)Math.Round(13 * (cb.DeviceDpi / 96.0));
+        int y = (cb.ClientSize.Height - size) / 2;
+        int x = 0;
+        if (cb.CheckAlign == ContentAlignment.MiddleRight || cb.CheckAlign == ContentAlignment.TopRight || cb.CheckAlign == ContentAlignment.BottomRight)
+            x = cb.ClientSize.Width - size;
+        if (cb.CheckAlign == ContentAlignment.TopCenter || cb.CheckAlign == ContentAlignment.BottomCenter || cb.CheckAlign == ContentAlignment.MiddleCenter)
+            x = (cb.ClientSize.Width - size) / 2;
+
+        var box = new Rectangle(x, y, size, size);
+        var g = e.Graphics;
+
+        // Erase the default glyph with the control's BackColor.
+        using (var bg = new SolidBrush(cb.BackColor))
+            g.FillRectangle(bg, Rectangle.Inflate(box, 2, 2));
+
+        var fill = cb.Checked ? pal.Accent : pal.Surface1;
+        using (var fillBrush = new SolidBrush(fill))
+            g.FillRectangle(fillBrush, box);
+        using (var pen = new Pen(pal.Border))
+            g.DrawRectangle(pen, box.X, box.Y, box.Width - 1, box.Height - 1);
+
+        if (cb.CheckState == CheckState.Checked)
+        {
+            DrawCheckmark(g, box, pal.AccentText);
+        }
+        else if (cb.CheckState == CheckState.Indeterminate)
+        {
+            using var ind = new SolidBrush(pal.TextMuted);
+            var pad = Math.Max(2, size / 4);
+            g.FillRectangle(ind, box.X + pad, box.Y + pad, box.Width - (pad * 2), box.Height - (pad * 2));
+        }
+    }
+
+    private static void PaintThemedRadioButton(object? sender, PaintEventArgs e)
+    {
+        if (sender is not RadioButton rb)
+            return;
+        var pal = Theme.Current;
+
+        int size = (int)Math.Round(13 * (rb.DeviceDpi / 96.0));
+        int y = (rb.ClientSize.Height - size) / 2;
+        int x = 0;
+        if (rb.CheckAlign == ContentAlignment.MiddleRight || rb.CheckAlign == ContentAlignment.TopRight || rb.CheckAlign == ContentAlignment.BottomRight)
+            x = rb.ClientSize.Width - size;
+        if (rb.CheckAlign == ContentAlignment.TopCenter || rb.CheckAlign == ContentAlignment.BottomCenter || rb.CheckAlign == ContentAlignment.MiddleCenter)
+            x = (rb.ClientSize.Width - size) / 2;
+
+        var box = new Rectangle(x, y, size, size);
+        var g = e.Graphics;
+        var prevSmoothing = g.SmoothingMode;
+        g.SmoothingMode = SmoothingMode.AntiAlias;
+
+        using (var bg = new SolidBrush(rb.BackColor))
+            g.FillRectangle(bg, Rectangle.Inflate(box, 2, 2));
+
+        var fill = rb.Checked ? pal.Accent : pal.Surface1;
+        using (var fillBrush = new SolidBrush(fill))
+            g.FillEllipse(fillBrush, box);
+        using (var pen = new Pen(pal.Border))
+            g.DrawEllipse(pen, box.X, box.Y, box.Width - 1, box.Height - 1);
+
+        if (rb.Checked)
+        {
+            int pad = Math.Max(2, size / 4);
+            using var dot = new SolidBrush(pal.AccentText);
+            g.FillEllipse(dot, box.X + pad, box.Y + pad, box.Width - (pad * 2), box.Height - (pad * 2));
+        }
+
+        g.SmoothingMode = prevSmoothing;
+    }
+
+    private static void DrawCheckmark(Graphics g, Rectangle box, Color color)
+    {
+        var prev = g.SmoothingMode;
+        g.SmoothingMode = SmoothingMode.AntiAlias;
+        float w = box.Width;
+        float h = box.Height;
+        var pts = new[]
+        {
+            new PointF(box.X + (w * 0.20f), box.Y + (h * 0.52f)),
+            new PointF(box.X + (w * 0.44f), box.Y + (h * 0.74f)),
+            new PointF(box.X + (w * 0.80f), box.Y + (h * 0.28f)),
+        };
+        using var pen = new Pen(color, Math.Max(1.5f, w / 8f)) { StartCap = LineCap.Round, EndCap = LineCap.Round, LineJoin = LineJoin.Round };
+        g.DrawLines(pen, pts);
+        g.SmoothingMode = prev;
     }
 
     private static void StyleDataGridView(DataGridView dgv, ThemePalette p)
