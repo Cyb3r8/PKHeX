@@ -42,7 +42,7 @@ public static class EncounterEvent
     public static readonly WC9[] MGDB_G9 = GetWC9DB(Util.GetBinaryResource("wc9.pkl"));
 
     /// <summary>Event Database for Generation 9 <see cref="EntityContext.Gen9a"/></summary>
-    public static readonly WA9[] MGDB_G9A = [..GetWA9DB(Util.GetBinaryResource("wa9.pkl")), ..Encounters9aHome.BuildSynthetic()];
+    public static readonly WA9[] MGDB_G9A = GetWA9DB(Util.GetBinaryResource("wa9.pkl"));
     #endregion
 
     #region Locally Loaded Data
