@@ -674,16 +674,9 @@ public sealed class WA9(Memory<byte> raw) : DataMysteryGift(raw), ILangNick, INa
 
     public bool IsDateRestricted => true;
 
-    /// <summary>
-    /// Synthesized templates for HOME 4.0.0 Z-A connectivity Mystery Gifts that are not yet
-    /// in the binary archive. Their seed correlation is unknown, so seed-based checks are skipped.
-    /// Remove these CardIDs once official <c>.wa9</c> data is available.
-    /// </summary>
-    private bool IsSyntheticHomeGift => CardID is 9031 or 9032 or 9033;
-
     protected override bool IsMatchDeferred(PKM pk) => false;
 
-    protected override bool IsMatchPartial(PKM pk) => !IsSyntheticHomeGift && TryGetSeed(pk, out _) != SeedCorrelationResult.Success;
+    protected override bool IsMatchPartial(PKM pk) => TryGetSeed(pk, out _) != SeedCorrelationResult.Success;
 
     #region Lazy Ribbon Implementation
 
@@ -837,17 +830,10 @@ public sealed class WA9(Memory<byte> raw) : DataMysteryGift(raw), ILangNick, INa
         return false;
     }
 
-    public SeedCorrelationResult TryGetSeed(PKM pk, out ulong seed)
-    {
-        if (IsSyntheticHomeGift)
-        {
-            seed = 0;
-            return SeedCorrelationResult.Ignore; // unknown seed; skip correlation checks
-        }
-        return GetParams(PersonalTable.ZA[Species, Form]).TryGetSeed(pk, out seed)
+    public SeedCorrelationResult TryGetSeed(PKM pk, out ulong seed) =>
+        GetParams(PersonalTable.ZA[Species, Form]).TryGetSeed(pk, out seed)
             ? SeedCorrelationResult.Success
             : SeedCorrelationResult.Invalid;
-    }
 
     public LumioseCorrelation Correlation => LumioseCorrelation.SkipTrainer;
     public byte FlawlessIVCount => GetFlawlessIVCount(IV_HP);
