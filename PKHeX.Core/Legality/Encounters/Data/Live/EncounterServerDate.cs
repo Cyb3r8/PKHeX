@@ -369,5 +369,6 @@ public static class EncounterServerDate
         {9031, new(2026, 04, 02)}, // Alpha Chikorita
         {9032, new(2026, 04, 02)}, // Alpha Tepig
         {9033, new(2026, 04, 02)}, // Alpha Totodile
+        {9034, new(2026, 04, 26)}, // Shiny Volcanion - HOME Z-A Pokédex Completion (-1 start date tolerance for GMT-10 regions)
     };
 }
