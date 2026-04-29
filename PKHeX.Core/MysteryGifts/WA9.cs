@@ -102,19 +102,17 @@ public sealed class WA9(Memory<byte> raw) : DataMysteryGift(raw), ILangNick, INa
     private Shiny FixedShinyType() => GetShinyXor() switch
     {
         0 => Shiny.AlwaysSquare,
-        1 => Shiny.AlwaysStar,
-        <= 15 => Shiny.Always, // HOME-trade shiny (PID hand-crafted; xor not produced by Gen8+ algorithm)
+        <= 15 => Shiny.Always,
         _ => Shiny.Never,
     };
 
     private uint GetShinyXor()
     {
+        var id32 = IsOldIDFormat ? ID32Old : ID32;
         // Player owned anti-shiny fixed PID
-        if (ID32 == 0)
+        if (id32 == 0)
             return uint.MaxValue;
-        // The PKM is generated with ID32Old when IsOldIDFormat is true; compute xor against the same form.
-        var id = IsOldIDFormat ? ID32Old : ID32;
-        return ShinyUtil.GetShinyXor(PID, id);
+        return ShinyUtil.GetShinyXor(PID, id32);
     }
 
     // When applying the ID32, the game sets the DisplayTID7 directly, then sets PA9.DisplaySID7 as (wa9.DisplaySID7 - wa9.CardID)
@@ -707,28 +705,16 @@ public sealed class WA9(Memory<byte> raw) : DataMysteryGift(raw), ILangNick, INa
         if (pk is IAlphaReadOnly a && a.IsAlpha != IsAlpha)
             return true;
 
-        if (IsHOMEGift)
+        if (IsHOMEGift && FlawlessIVCount > 0)
         {
-            Span<int> giftIVs = stackalloc int[6];
-            GetIVs(giftIVs);
-            Span<int> pkIVs = stackalloc int[6];
-            pk.GetIVs(pkIVs);
+            if (pk.FlawlessIVCount != FlawlessIVCount)
+                return false; // HOME ZA-starters have non-perfect IVs to 20, so IVs at 31 can't exceed the flawless count.
 
-            if (giftIVs.IndexOfAny(0xFC, 0xFD, 0xFE) != -1)
+            Span<int> IVs = stackalloc int[6];
+            pk.GetIVs(IVs);
+            foreach (var iv in IVs)
             {
-                // Flag-encoded template (e.g. ZA starters): N perfect IVs, rest at HomeBaseIV.
-                if (pk.FlawlessIVCount != FlawlessIVCount)
-                    return false;
-                foreach (var iv in pkIVs)
-                {
-                    if (iv != 31 && iv != HomeBaseIV)
-                        return false;
-                }
-            }
-            else
-            {
-                // Fixed-value template (e.g. Shiny Volcanion): must match exactly.
-                if (!giftIVs.SequenceEqual(pkIVs))
+                if (iv != 31 && iv != HomeBaseIV)
                     return false;
             }
         }
