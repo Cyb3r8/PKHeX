@@ -73,7 +73,7 @@ public partial class Main : Form
     public static string CryPath => Settings.LocalResources.GetCryPath();
     private static string TemplatePath => Settings.LocalResources.GetTemplatePath();
     private static string TrainerPath => Settings.LocalResources.GetTrainerPath();
-    private const string ThreadPath = "https://projectpokemon.org/pkhex/";
+    private const string ThreadPath = "https://github.com/hexbyt3/PKHeXth/releases/latest";
 
     public static PKHeXSettings Settings => Program.Settings;
 
@@ -155,10 +155,18 @@ public partial class Main : Form
     private void NotifyNewVersionAvailable(Version version)
     {
         var date = $"{2000 + version.Major:00}{version.Minor:00}{version.Build:00}";
+        var label = version.Revision > 0 ? $"{date} r{version.Revision}" : date;
         var lbl = L_UpdateAvailable;
-        lbl.Text = $"{MsgProgramUpdateAvailable} {date}";
+        lbl.Text = $"{MsgProgramUpdateAvailable} {label}";
         lbl.Click += (_, _) => Process.Start(new ProcessStartInfo(ThreadPath) { UseShellExecute = true });
         lbl.Visible = lbl.TabStop = lbl.Enabled = true;
+
+        var prompt = MessageBox.Show(
+            $"{MsgProgramUpdateAvailable} {label}\n\nOpen the download page now?",
+            MsgProgramUpdateAvailable,
+            MessageBoxButtons.YesNo, MessageBoxIcon.Information);
+        if (prompt == DialogResult.Yes)
+            Process.Start(new ProcessStartInfo(ThreadPath) { UseShellExecute = true });
     }
 
     public static DrawConfig Draw { get; private set; } = new();
