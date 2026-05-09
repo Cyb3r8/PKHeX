@@ -60,15 +60,19 @@ jobs:
         if ($baseVersionExists -or $latestRevision -gt 0) {
           $newRevision = $latestRevision + 1
           $releaseVersion = "${baseVersion}-rev.${newRevision}"
+          $buildVersion = "${baseVersion}.${newRevision}"
           echo "Creating new revision release: $releaseVersion"
         } else {
           # Base version doesn't exist, create it
           $releaseVersion = $baseVersion
+          $buildVersion = $baseVersion
           echo "Creating initial release: $releaseVersion"
         }
 
         echo "RELEASE_VERSION=$releaseVersion" >> $env:GITHUB_OUTPUT
+        echo "BUILD_VERSION=$buildVersion" >> $env:GITHUB_OUTPUT
         echo "Final release version: $releaseVersion"
+        echo "Assembly build version: $buildVersion"
       shell: pwsh
       env:
         GH_TOKEN: ${{ github.token }}
@@ -77,7 +81,7 @@ jobs:
       run: dotnet restore PKHeX.sln
 
     - name: Publish project
-      run: dotnet publish PKHeX.WinForms/PKHeX.WinForms.csproj --configuration Release --runtime win-x64 --self-contained false -p:PublishSingleFile=true -p:PublishReadyToRun=true -p:IncludeAllContentForSelfExtract=true --output publish
+      run: dotnet publish PKHeX.WinForms/PKHeX.WinForms.csproj --configuration Release --runtime win-x64 --self-contained false -p:PublishSingleFile=true -p:PublishReadyToRun=true -p:IncludeAllContentForSelfExtract=true -p:Version=${{ steps.check_release.outputs.BUILD_VERSION }} --output publish
 
     - name: Create release
       run: |
