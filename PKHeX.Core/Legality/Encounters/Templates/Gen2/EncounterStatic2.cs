@@ -106,11 +106,11 @@ public sealed record EncounterStatic2(ushort Species, byte Level, GameVersion Ve
                 if (pk.EXP != 125)
                     return false;
             }
-            else
-            {
-                if (pk.EXP < 125)
-                    return false;
-            }
+            //else
+            //{
+            //    // Once hatched, EXP can vary.
+            //    // Daycare can reset EXP gained back to 0, below the initial EXP had by the egg.
+            //}
         }
 
         if (!IsMatchEggLocation(pk))
